@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy - NTab</title>
+  <style>
+    :root {
+      --bg: #09090b;
+      --card-bg: #18181b;
+      --border: #27272a;
+      --text: #f4f4f5;
+      --text-muted: #a1a1aa;
+      --accent: #6366f1;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #fafafa;
+        --card-bg: #ffffff;
+        --border: #e4e4e7;
+        --text: #18181b;
+        --text-muted: #71717a;
+        --accent: #4f46e5;
+      }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 40px 20px;
+    }
+    .container {
+      max-width: 780px;
+      margin: 0 auto;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #4f46e5, #38bdf8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: 800;
+      color: #fff;
+    }
+    h1 { font-size: 26px; font-weight: 800; }
+    h2 { font-size: 19px; font-weight: 700; margin-top: 36px; margin-bottom: 14px; color: var(--accent); }
+    p, li { font-size: 14.5px; color: var(--text-muted); margin-bottom: 12px; }
+    ul { padding-left: 24px; margin-bottom: 16px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 13.5px;
+    }
+    th, td {
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      text-align: left;
+    }
+    th {
+      background-color: var(--card-bg);
+      color: var(--text);
+      font-weight: 600;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-family: monospace;
+      background-color: rgba(99, 102, 241, 0.12);
+      color: var(--accent);
+    }
+    .footer {
+      margin-top: 50px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      font-size: 13px;
+      color: var(--text-muted);
+      text-align: center;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">N</div>
+      <div>
+        <h1>NTab Privacy Policy</h1>
+        <p style="margin:0; font-size: 12px;">Last updated: March 2025 · 100% Zero-Telemetry Architecture</p>
+      </div>
+    </div>
+
+    <p><strong>NTab</strong> is an open-source, minimalist new tab browser extension with smart multi-column bookmark management. We believe privacy is a fundamental human right. NTab is built with an offline-first architecture with zero tracking.</p>
+
+    <h2>1. Zero Data Collection & Tracking</h2>
+    <ul>
+      <li><strong>No Personal Data Collected:</strong> We do not collect, track, store, or sell any personal data, search queries, browsing habits, IP addresses, or device identifiers.</li>
+      <li><strong>No Analytics SDKs:</strong> NTab contains zero tracking SDKs, zero analytics trackers (no Google Analytics, Mixpanel, etc.), and zero third-party advertising scripts.</li>
+      <li><strong>100% Client-Side Execution:</strong> All layouts, themes, calculations, and bookmark operations run strictly within your local browser sandbox.</li>
+    </ul>
+
+    <h2>2. Permissions Justification</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Permission</th>
+          <th>Purpose</th>
+          <th>Data Destination</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="badge">bookmarks</span></td>
+          <td>Reads and organizes bookmarks into multi-column cards; performs user-initiated add/move/delete actions.</td>
+          <td><strong>100% Local</strong>. Never leaves your computer.</td>
+        </tr>
+        <tr>
+          <td><span class="badge">storage</span></td>
+          <td>Saves user preferences (theme, column width, font size, custom search engines, 7-day trash bin).</td>
+          <td>Stored in Chrome's native storage.</td>
+        </tr>
+        <tr>
+          <td><span class="badge">topSites</span></td>
+          <td>Renders the optional "Top Sites" widget.</td>
+          <td>Local only via browser API.</td>
+        </tr>
+        <tr>
+          <td><span class="badge">sessions</span></td>
+          <td>Renders recently closed tabs in the "Recently Closed" widget.</td>
+          <td>Local only via browser API.</td>
+        </tr>
+        <tr>
+          <td><span class="badge">identity</span></td>
+          <td><em>(Optional)</em> Used strictly when you click "Sign in with Google" to backup settings to your own private Google Drive appDataFolder.</td>
+          <td>Direct connection to official Google APIs. No intermediate server exists.</td>
+        </tr>
+        <tr>
+          <td><span class="badge">host_permissions (*://*/*)</span></td>
+          <td>Used exclusively for client-side Bookmark Health Checker. Sends lightweight HEAD requests to detect 404/403 dead links.</td>
+          <td>Direct peer-to-target request. Zero tracking or logs.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>3. Cloud Backup Security</h2>
+    <p>If you choose to enable Google Drive sync, your settings JSON is stored directly in your own private Google Drive AppData folder. The developers of NTab have zero access to your Google account, Drive files, or backups.</p>
+
+    <h2>4. Open Source Transparency</h2>
+    <p>NTab is open-source software under the MIT License. The complete source code is public and verifiable on GitHub:</p>
+    <p><a href="https://github.com/noby338/ntab" target="_blank" rel="noopener">https://github.com/noby338/ntab</a></p>
+
+    <div class="footer">
+      NTab © 2025 · Designed for focus, speed, and privacy.
+    </div>
+  </div>
+</body>
+</html>

@@ -308,6 +308,7 @@ function handleDelete(event: MouseEvent) {
     </div>
 
     <div
+      :data-bookmark-id="node.id"
       :draggable="!isBatchMode"
       @dragstart="handleDragStart"
       @dragend="handleDragEnd"

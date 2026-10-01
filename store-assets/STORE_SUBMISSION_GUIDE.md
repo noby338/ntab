@@ -56,8 +56,7 @@ Used solely when the user explicitly clicks "Sign in with Google" to backup and 
 ## 3. 隐私权政策 (Privacy Policy)
 
 - **隐私政策网址 (Privacy Policy URL)** 选项填写：
-  - 若已开通 GitHub Pages：`https://noby338.github.io/ntab/privacy.html`
-  - 或直接填入 GitHub 仓库公开链接：`https://github.com/noby338/ntab/blob/main/PRIVACY.md`
+  - 独立网页部署地址：`https://noby338.github.io/ntab/privacy.html`（或您的自定义部署 URL，如 `https://ntab.vercel.app/privacy.html`）
 
 ---
 

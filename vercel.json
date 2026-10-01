@@ -1,0 +1,6 @@
+{
+  "framework": null,
+  "buildCommand": "echo 'Deploying static landing page and privacy policy'",
+  "outputDirectory": ".",
+  "cleanUrls": true
+}

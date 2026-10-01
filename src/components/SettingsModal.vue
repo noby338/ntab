@@ -21,7 +21,20 @@ import {
   Heart,
   Coffee,
   ExternalLink,
+  Activity,
+  AlertOctagon,
+  ShieldAlert,
+  Play,
+  Square,
+  CheckCircle2,
 } from '@lucide/vue';
+import {
+  checkerState,
+  runBookmarkHealthCheck,
+  stopBookmarkHealthCheck,
+  extractAllLeafBookmarks,
+} from '../services/bookmarkChecker';
+import ConfirmDeleteModal from './ConfirmDeleteModal.vue';
 import {
   userSettings,
   saveSettings,
@@ -58,6 +71,7 @@ import {
   allBookmarksMap,
   loadTopSites,
   loadRecentlyClosed,
+  batchRemoveBookmarks,
 } from '../services/bookmarks';
 import { t, LANGUAGE_OPTIONS, activeLanguage } from '../locales';
 import {
@@ -69,20 +83,118 @@ import {
   logoutGoogle,
   backupToGoogleCloud,
   restoreFromGoogleCloud,
+  isRealExtension,
 } from '../services/googleAuthService';
 import AdvancedConfigModal from './AdvancedConfigModal.vue';
 import type { ThemeMode } from '../types';
 
 const props = defineProps<{
   isOpen: boolean;
-  initialTab?: 'appearance' | 'layout' | 'shortcuts' | 'donate' | 'backup';
+  initialTab?: 'appearance' | 'layout' | 'shortcuts' | 'health' | 'donate' | 'backup';
 }>();
 
 const emit = defineEmits<{
   (e: 'close'): void;
 }>();
 
-const activeTab = ref<'appearance' | 'layout' | 'shortcuts' | 'donate' | 'backup'>('appearance');
+const activeTab = ref<'appearance' | 'layout' | 'shortcuts' | 'health' | 'donate' | 'backup'>('appearance');
+
+const healthTab = ref<'dead_404' | 'blocked_403'>('dead_404');
+const healthSelectedDeleteIds = ref<Set<string>>(new Set());
+const isHealthDeleting = ref(false);
+const isHealthConfirmOpen = ref(false);
+
+const allLeafBookmarks = computed(() => extractAllLeafBookmarks(rawBookmarkTree.value));
+
+const healthProgressPercent = computed(() => {
+  if (!checkerState.value.total) return 0;
+  return Math.min(
+    100,
+    Math.round((checkerState.value.completed / checkerState.value.total) * 100)
+  );
+});
+
+const dead404Results = computed(() => {
+  return checkerState.value.results.filter((r) => r.status === 'dead_404');
+});
+
+const blocked403Results = computed(() => {
+  return checkerState.value.results.filter((r) => r.status === 'blocked_403');
+});
+
+const displayedHealthResults = computed(() => {
+  if (healthTab.value === 'dead_404') return dead404Results.value;
+  return blocked403Results.value;
+});
+
+watch(
+  () => dead404Results.value.length,
+  () => {
+    const set = new Set(healthSelectedDeleteIds.value);
+    for (const item of dead404Results.value) {
+      set.add(item.id);
+    }
+    healthSelectedDeleteIds.value = set;
+  }
+);
+
+function startHealthCheck() {
+  healthSelectedDeleteIds.value.clear();
+  runBookmarkHealthCheck(allLeafBookmarks.value);
+}
+
+function handleStopHealthCheck() {
+  stopBookmarkHealthCheck();
+}
+
+function toggleHealthSelect(id: string) {
+  const set = new Set(healthSelectedDeleteIds.value);
+  if (set.has(id)) {
+    set.delete(id);
+  } else {
+    set.add(id);
+  }
+  healthSelectedDeleteIds.value = set;
+}
+
+function selectAllHealthInTab() {
+  const set = new Set(healthSelectedDeleteIds.value);
+  for (const item of displayedHealthResults.value) {
+    set.add(item.id);
+  }
+  healthSelectedDeleteIds.value = set;
+}
+
+function clearHealthSelect() {
+  healthSelectedDeleteIds.value.clear();
+}
+
+function selectOnly404Health() {
+  healthSelectedDeleteIds.value = new Set(dead404Results.value.map((r) => r.id));
+  healthTab.value = 'dead_404';
+}
+
+function promptHealthDelete() {
+  if (healthSelectedDeleteIds.value.size === 0) return;
+  isHealthConfirmOpen.value = true;
+}
+
+async function handleConfirmedHealthDelete() {
+  isHealthConfirmOpen.value = false;
+  const ids = Array.from(healthSelectedDeleteIds.value);
+  if (ids.length === 0) return;
+
+  isHealthDeleting.value = true;
+  try {
+    await batchRemoveBookmarks(ids);
+    checkerState.value.results = checkerState.value.results.filter(
+      (r) => !healthSelectedDeleteIds.value.has(r.id)
+    );
+    healthSelectedDeleteIds.value.clear();
+  } finally {
+    isHealthDeleting.value = false;
+  }
+}
 
 watch(
   () => props.isOpen,
@@ -378,6 +490,26 @@ function handleImport() {
           >
             <Keyboard class="w-4 h-4" />
             <span>{{ t('settings.tabShortcuts') || '快捷键' }}</span>
+          </button>
+
+          <button
+            type="button"
+            @click="activeTab = 'health'"
+            class="flex items-center gap-1.5 py-3 border-b-2 transition-colors cursor-pointer"
+            :class="[
+              activeTab === 'health'
+                ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400 font-semibold'
+                : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200',
+            ]"
+          >
+            <Activity class="w-4 h-4" />
+            <span>{{ t('healthCheck.title') || '失效体检' }}</span>
+            <span
+              v-if="dead404Results.length > 0"
+              class="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-red-500 text-white"
+            >
+              {{ dead404Results.length }}
+            </span>
           </button>
 
           <button
@@ -1074,6 +1206,230 @@ function handleImport() {
             </div>
           </div>
 
+          <!-- Health Check Tab (Integrated directly into Settings) -->
+          <div v-if="activeTab === 'health'" class="space-y-4">
+            <!-- Header Status Card -->
+            <div class="p-3.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-xs space-y-3">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                  <Activity class="w-5 h-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
+                  <div>
+                    <div class="font-bold text-slate-800 dark:text-zinc-100">{{ t('healthCheck.title') || '书签失效健康体检' }}</div>
+                    <div class="text-[11px] text-slate-500 dark:text-zinc-400">
+                      {{ t('healthCheck.subtitle') || '超轻量探测 · 仅检测 404 与 403 明确状态' }}
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Controls -->
+                <div class="flex items-center gap-2">
+                  <button
+                    v-if="checkerState.isRunning"
+                    type="button"
+                    @click="handleStopHealthCheck"
+                    class="px-3 py-1 rounded-xl bg-red-600 hover:bg-red-700 text-white font-medium text-xs transition-colors cursor-pointer flex items-center gap-1"
+                  >
+                    <Square class="w-3.5 h-3.5 fill-current" />
+                    <span>{{ t('healthCheck.pause') || '停止' }}</span>
+                  </button>
+                  <button
+                    v-else
+                    type="button"
+                    @click="startHealthCheck"
+                    class="px-3.5 py-1 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-xs shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Play class="w-3 h-3 fill-current" />
+                    <span>{{ checkerState.completed > 0 ? (t('healthCheck.recheck') || '重新体检') : (t('healthCheck.start') || '开始体检') }}</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Scanning Progress -->
+              <div v-if="checkerState.isRunning" class="space-y-1.5 pt-1 border-t border-indigo-500/15">
+                <div class="flex items-center justify-between text-[11px]">
+                  <span class="text-indigo-700 dark:text-indigo-300 font-mono truncate mr-2">
+                    {{ checkerState.currentUrl || checkerState.currentTitle }}
+                  </span>
+                  <span class="font-mono text-slate-500 flex-shrink-0">
+                    {{ checkerState.completed }} / {{ checkerState.total }} ({{ healthProgressPercent }}%)
+                  </span>
+                </div>
+                <div class="w-full h-1.5 rounded-full bg-slate-200 dark:bg-zinc-800 overflow-hidden">
+                  <div
+                    class="h-full bg-indigo-500 rounded-full transition-all duration-150"
+                    :style="{ width: `${healthProgressPercent}%` }"
+                  ></div>
+                </div>
+              </div>
+
+              <!-- Localhost dev warning banner -->
+              <div v-if="!isRealExtension" class="p-2 rounded-xl bg-amber-500/15 text-amber-800 dark:text-amber-300 text-[11px] leading-relaxed">
+                ⚠️ 当前在开发调试模式 (localhost)，浏览器安全限制会导致外部站点跨域失败。打包为 Chrome 扩展后将具有完全跨域探测权限。
+              </div>
+            </div>
+
+            <!-- Tab Switcher: 404 vs 403 only -->
+            <div class="flex items-center gap-2 border-b border-black/5 dark:border-white/5 text-xs font-medium">
+              <button
+                type="button"
+                @click="healthTab = 'dead_404'"
+                class="flex items-center gap-1.5 py-2 border-b-2 transition-colors cursor-pointer"
+                :class="[
+                  healthTab === 'dead_404'
+                    ? 'border-red-600 text-red-600 dark:border-red-400 dark:text-red-400 font-semibold'
+                    : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200'
+                ]"
+              >
+                <AlertOctagon class="w-3.5 h-3.5" />
+                <span>{{ t('healthCheck.tab404') || '404 确定失效 (建议清理)' }}</span>
+                <span
+                  v-if="dead404Results.length > 0"
+                  class="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-red-500 text-white"
+                >
+                  {{ dead404Results.length }}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                @click="healthTab = 'blocked_403'"
+                class="flex items-center gap-1.5 py-2 border-b-2 transition-colors cursor-pointer"
+                :class="[
+                  healthTab === 'blocked_403'
+                    ? 'border-amber-600 text-amber-600 dark:border-amber-400 dark:text-amber-400 font-semibold'
+                    : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200'
+                ]"
+              >
+                <ShieldAlert class="w-3.5 h-3.5" />
+                <span>{{ t('healthCheck.tab403') || '403 / 401 拦截 (请复查)' }}</span>
+                <span
+                  v-if="blocked403Results.length > 0"
+                  class="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-amber-500 text-white"
+                >
+                  {{ blocked403Results.length }}
+                </span>
+              </button>
+            </div>
+
+            <!-- Result List Area -->
+            <div class="space-y-2 text-xs">
+              <div
+                v-if="displayedHealthResults.length > 0"
+                class="p-2.5 rounded-xl border text-[11px] flex items-center gap-2 leading-relaxed"
+                :class="[
+                  healthTab === 'dead_404'
+                    ? 'bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400'
+                    : 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400'
+                ]"
+              >
+                <AlertOctagon v-if="healthTab === 'dead_404'" class="w-4 h-4 flex-shrink-0" />
+                <ShieldAlert v-else class="w-4 h-4 flex-shrink-0" />
+                <span>
+                  {{
+                    healthTab === 'dead_404'
+                      ? (t('healthCheck.hint404') || '目标服务器已明确返回 404/410 页面丢失，资源已失效，可放心勾选批量清理。')
+                      : (t('healthCheck.hint403') || '访问受限（通常是 Cloudflare 人机验证、防火墙防爬或需要登录授权）。网站依然在线，建议右侧打开复查，请勿随意删除。')
+                  }}
+                </span>
+              </div>
+
+              <!-- List -->
+              <div v-if="displayedHealthResults.length > 0" class="max-h-60 overflow-y-auto space-y-1.5">
+                <div
+                  v-for="item in displayedHealthResults"
+                  :key="item.id"
+                  class="flex items-center justify-between p-2 rounded-xl border transition-colors"
+                  :class="[
+                    healthSelectedDeleteIds.has(item.id)
+                      ? 'border-red-500/40 bg-red-500/5 dark:bg-red-500/10'
+                      : 'border-slate-200/80 dark:border-white/5 bg-white/40 dark:bg-zinc-900/40'
+                  ]"
+                >
+                  <div class="flex items-center gap-2 flex-1 min-w-0 mr-2">
+                    <input
+                      type="checkbox"
+                      :checked="healthSelectedDeleteIds.has(item.id)"
+                      @change="toggleHealthSelect(item.id)"
+                      class="w-3.5 h-3.5 rounded text-red-600 cursor-pointer flex-shrink-0"
+                    />
+                    <div class="flex-1 min-w-0">
+                      <div class="font-medium text-slate-800 dark:text-zinc-200 truncate">{{ item.title }}</div>
+                      <div class="text-[10px] text-slate-400 dark:text-zinc-500 font-mono truncate">{{ item.url }}</div>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-1.5 flex-shrink-0">
+                    <span
+                      class="px-1.5 py-0.2 rounded font-mono text-[9px] font-semibold border"
+                      :class="[
+                        item.status === 'dead_404'
+                          ? 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20'
+                          : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                      ]"
+                    >
+                      HTTP {{ item.httpCode }}
+                    </span>
+                    <a
+                      :href="item.url"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="p-1 rounded text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer"
+                    >
+                      <ExternalLink class="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Empty state in tab -->
+              <div
+                v-else
+                class="py-8 text-center text-xs text-slate-400 dark:text-zinc-500 flex flex-col items-center justify-center gap-1.5"
+              >
+                <CheckCircle2 v-if="checkerState.completed > 0" class="w-6 h-6 text-emerald-500 opacity-60" />
+                <Activity v-else class="w-6 h-6 text-indigo-500 opacity-40" />
+                <span>{{ checkerState.completed > 0 ? (t('healthCheck.noIssues') || '此分类下未发现异常书签！') : (t('healthCheck.emptyTitle') || '尚未进行体检，请点击上方“开始体检”') }}</span>
+              </div>
+
+              <!-- Selection controls and batch delete button -->
+              <div v-if="displayedHealthResults.length > 0" class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-zinc-800/80">
+                <div class="flex items-center gap-2">
+                  <button
+                    type="button"
+                    @click="selectAllHealthInTab"
+                    class="px-2 py-0.5 rounded border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 text-[11px] cursor-pointer"
+                  >
+                    {{ t('common.selectAll') || '全选本项' }}
+                  </button>
+                  <button
+                    type="button"
+                    @click="selectOnly404Health"
+                    class="px-2 py-0.5 rounded border border-red-500/30 text-red-600 text-[11px] cursor-pointer"
+                  >
+                    {{ t('healthCheck.selectOnly404') || '仅选 404 项' }}
+                  </button>
+                  <button
+                    type="button"
+                    @click="clearHealthSelect"
+                    class="text-slate-400 text-[11px] cursor-pointer hover:underline"
+                  >
+                    {{ t('common.clear') || '清空' }}
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  @click="promptHealthDelete"
+                  :disabled="healthSelectedDeleteIds.size === 0 || isHealthDeleting"
+                  class="px-3.5 py-1 rounded-xl bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white font-medium text-xs transition-colors cursor-pointer flex items-center gap-1"
+                >
+                  <Trash2 class="w-3 h-3" />
+                  <span>{{ isHealthDeleting ? (t('common.deleting') || '删除中...') : `删除选中的 ${healthSelectedDeleteIds.size} 项` }}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
           <!-- Donate / Support Tab -->
           <div v-if="activeTab === 'donate'" class="space-y-5">
             <!-- Warm Intro Banner -->
@@ -1407,5 +1763,13 @@ function handleImport() {
   <AdvancedConfigModal
     :is-open="isAdvancedModalOpen"
     @close="isAdvancedModalOpen = false"
+  />
+
+  <ConfirmDeleteModal
+    :is-open="isHealthConfirmOpen"
+    :title="t('healthCheck.deleteConfirmTitle') || '批量删除失效书签'"
+    :description="(t('healthCheck.deleteConfirmMsg') || '确定从浏览器中彻底永久删除选中的 {count} 个书签吗？此操作无法撤销。').replace('{count}', String(healthSelectedDeleteIds.size))"
+    @cancel="isHealthConfirmOpen = false"
+    @confirm="handleConfirmedHealthDelete"
   />
 </template>

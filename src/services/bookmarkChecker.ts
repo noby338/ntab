@@ -5,10 +5,7 @@ import { getFolderPath } from './bookmarks';
 export type CheckStatus =
   | 'ok'
   | 'dead_404'
-  | 'blocked_403'
-  | 'server_error'
-  | 'timeout'
-  | 'unreachable';
+  | 'blocked_403';
 
 export interface BookmarkCheckResult {
   id: string;
@@ -140,17 +137,10 @@ async function probeSingleUrl(
   }
 
   if (!res) {
-    if (signal.aborted) {
-      return { status: 'timeout', errorMsg: 'Cancelled' };
-    }
-    return { status: 'unreachable', errorMsg: 'Connection failed' };
+    return { status: 'ok', errorMsg: 'Skipped' };
   }
 
   const code = res.status;
-
-  if (code >= 200 && code < 400) {
-    return { status: 'ok', httpCode: code };
-  }
 
   if (code === 404 || code === 410) {
     return { status: 'dead_404', httpCode: code };
@@ -160,11 +150,7 @@ async function probeSingleUrl(
     return { status: 'blocked_403', httpCode: code };
   }
 
-  if (code >= 500 && code <= 599) {
-    return { status: 'server_error', httpCode: code };
-  }
-
-  return { status: 'unreachable', httpCode: code };
+  return { status: 'ok', httpCode: code };
 }
 
 export async function runBookmarkHealthCheck(

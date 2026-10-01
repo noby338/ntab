@@ -33,7 +33,6 @@ import SettingsModal from '../../src/components/SettingsModal.vue';
 import ContextMenu from '../../src/components/ContextMenu.vue';
 import CreateFolderModal from '../../src/components/CreateFolderModal.vue';
 import ConfirmDeleteModal from '../../src/components/ConfirmDeleteModal.vue';
-import BookmarkHealthModal from '../../src/components/BookmarkHealthModal.vue';
 import SearchEngineIcon from '../../src/components/SearchEngineIcon.vue';
 import { currentGoogleUser, loginWithGoogle } from '../../src/services/googleAuthService';
 import { initGlobalDragScroll, isGlobalDragging, globalDragType, endGlobalDrag } from '../../src/services/dragScroll';
@@ -49,7 +48,6 @@ import type { BookmarkItem } from '../../src/types';
 
 // State
 const isBatchMode = ref(false);
-const isHealthModalOpen = ref(false);
 const isCornerActive = ref(false);
 const isButtonsHovered = ref(false);
 let cornerCloseTimer: ReturnType<typeof setTimeout> | null = null;
@@ -88,7 +86,12 @@ function handleButtonsLeave() {
 
 const selectedIds = ref<Set<string>>(new Set());
 const isSettingsOpen = ref(false);
-const settingsInitialTab = ref<'appearance' | 'layout' | 'shortcuts' | 'donate' | 'backup'>('appearance');
+const settingsInitialTab = ref<'appearance' | 'layout' | 'shortcuts' | 'health' | 'donate' | 'backup'>('appearance');
+
+function openHealthSettings() {
+  settingsInitialTab.value = 'health';
+  isSettingsOpen.value = true;
+}
 
 function openDonateSettings() {
   settingsInitialTab.value = 'donate';
@@ -398,10 +401,6 @@ const displayedColumns = computed(() => {
 
 function handleGlobalKeyDown(e: KeyboardEvent) {
   if (e.key === 'Escape') {
-    if (isHealthModalOpen.value) {
-      isHealthModalOpen.value = false;
-      return;
-    }
     if (deleteModalState.value.isOpen) {
       deleteModalState.value.isOpen = false;
       return;
@@ -440,7 +439,7 @@ function handleGlobalKeyDown(e: KeyboardEvent) {
     }
     if (matchesShortcut(e, getActiveShortcut('healthCheck'))) {
       e.preventDefault();
-      isHealthModalOpen.value = true;
+      openHealthSettings();
       return;
     }
     if (matchesShortcut(e, getActiveShortcut('openSettings'))) {
@@ -516,7 +515,7 @@ onUnmounted(() => {
         <!-- Dead-link Health Check Button -->
         <button
           type="button"
-          @click="isHealthModalOpen = true"
+          @click="openHealthSettings"
           :title="t('healthCheck.title') || '书签失效体检'"
           class="p-1.5 rounded-xl border border-slate-200/90 dark:border-white/10 bg-white/80 dark:bg-white/5 hover:bg-white dark:hover:bg-white/15 text-slate-800 dark:text-zinc-200 shadow-2xs transition-colors cursor-pointer flex items-center justify-center"
         >
@@ -660,7 +659,7 @@ onUnmounted(() => {
         <!-- Dead-link Health Check Button -->
         <button
           type="button"
-          @click="isHealthModalOpen = true"
+          @click="openHealthSettings"
           :title="t('healthCheck.title') || '书签失效体检'"
           class="rounded-xl border border-slate-200/90 dark:border-white/10 bg-white/80 dark:bg-white/5 hover:bg-white dark:hover:bg-white/15 text-slate-800 dark:text-zinc-200 shadow-2xs transition-colors cursor-pointer flex items-center justify-center p-2"
         >
@@ -792,14 +791,7 @@ onUnmounted(() => {
       @confirm-delete="handleBatchDelete"
       @clear-selection="clearSelection"
       @move-to-folder="handleBatchMove"
-      @open-health-check="isHealthModalOpen = true"
-    />
-
-    <!-- Bookmark Health Check Modal -->
-    <BookmarkHealthModal
-      :is-open="isHealthModalOpen"
-      :selected-bookmark-ids="selectedIds"
-      @close="isHealthModalOpen = false"
+      @open-health-check="openHealthSettings"
     />
 
     <!-- Settings Modal -->

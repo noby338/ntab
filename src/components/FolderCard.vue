@@ -323,9 +323,10 @@ async function handleFolderDrop(event: DragEvent) {
     :data-row-index="rowIndex"
     class="relative group/folder backdrop-blur-xl border rounded-2xl shadow-sm transition-[background-color,border-color,opacity,box-shadow] duration-150"
     style="background-color: var(--card-bg); border-color: var(--card-border);"
-    :class="{
-      'opacity-40 scale-98': isDraggingFolder,
-    }"
+    :class="[
+      isDraggingFolder ? 'opacity-40 scale-98' : '',
+      isMenuOpen ? 'z-40' : 'z-1'
+    ]"
     @dragover="handleFolderDragOver"
     @dragleave="handleFolderDragLeave"
     @drop="handleFolderDrop"
@@ -455,7 +456,7 @@ async function handleFolderDrop(event: DragEvent) {
       </button>
 
       <!-- Actions Menu Trigger -->
-      <div class="relative">
+      <div class="relative z-50">
         <button
           type="button"
           @click.stop="toggleMenu"

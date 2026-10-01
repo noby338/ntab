@@ -805,12 +805,15 @@ onUnmounted(() => {
       </span>
     </div>
 
-    <!-- Search Section (Higher up to save space) -->
+    <!-- Search Section (Sticky Fixed at Top When Scrolling) -->
     <section
       v-if="userSettings.showSearch"
-      :class="userSettings.compactHeader ? 'px-6 pt-2 mb-2' : 'px-6 mb-3'"
+      class="sticky top-2 z-40 pointer-events-none transition-all duration-200"
+      :class="userSettings.compactHeader ? 'px-6 pt-1 mb-2' : 'px-6 pt-1 mb-3'"
     >
-      <SearchBar />
+      <div class="pointer-events-auto">
+        <SearchBar />
+      </div>
     </section>
 
     <!-- Main Bookmark Columns Area -->

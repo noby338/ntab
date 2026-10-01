@@ -5,6 +5,7 @@ import {
   saveSettings,
   saveColumnLayout,
 } from './storage';
+import { t } from '../locales';
 
 export interface GoogleUser {
   id: string;
@@ -208,7 +209,7 @@ export async function backupToGoogleCloud(): Promise<{ success: boolean; error?:
   if (!user) return { success: false, error: 'Not logged in' };
 
   isSyncing.value = true;
-  syncStatusMessage.value = '正在上传备份至谷歌云端...';
+  syncStatusMessage.value = t('auth.syncingBackup') || 'Uploading backup to Google Drive...';
 
   try {
     const payload = buildAdaptiveExportData();
@@ -217,7 +218,7 @@ export async function backupToGoogleCloud(): Promise<{ success: boolean; error?:
     if (!isRealExtension) {
       localStorage.setItem('mock_google_drive_config', jsonString);
       recordSyncTime();
-      syncStatusMessage.value = '已同步至谷歌云端';
+      syncStatusMessage.value = t('auth.synced') || 'Synced to Google Drive';
       return { success: true };
     }
 
@@ -272,10 +273,10 @@ export async function backupToGoogleCloud(): Promise<{ success: boolean; error?:
     }
 
     recordSyncTime();
-    syncStatusMessage.value = '配置已安全备份至谷歌云端';
+    syncStatusMessage.value = t('auth.backupSuccess') || 'Settings safely backed up to Google Drive';
     return { success: true };
   } catch (err: any) {
-    syncStatusMessage.value = '云端备份失败';
+    syncStatusMessage.value = t('auth.backupFailed') || 'Cloud backup failed';
     return { success: false, error: err?.message || 'Cloud backup failed' };
   } finally {
     isSyncing.value = false;
@@ -287,7 +288,7 @@ export async function restoreFromGoogleCloud(): Promise<{ success: boolean; erro
   if (!user) return { success: false, error: 'Not logged in' };
 
   isSyncing.value = true;
-  syncStatusMessage.value = '正在从谷歌云端拉取配置...';
+  syncStatusMessage.value = t('auth.pullingBackup') || 'Pulling settings from Google Drive...';
 
   try {
     let jsonContent: any = null;
@@ -320,11 +321,11 @@ export async function restoreFromGoogleCloud(): Promise<{ success: boolean; erro
     saveSettings(settings);
     saveColumnLayout({ columns });
     recordSyncTime();
-    syncStatusMessage.value = '已从云端成功恢复配置';
+    syncStatusMessage.value = t('auth.restoreSuccess') || 'Settings successfully restored from cloud';
 
     return { success: true };
   } catch (err: any) {
-    syncStatusMessage.value = '拉取云端配置失败';
+    syncStatusMessage.value = t('auth.restoreFailed') || 'Failed to fetch cloud backup';
     return { success: false, error: err?.message || 'Failed to restore cloud config' };
   } finally {
     isSyncing.value = false;

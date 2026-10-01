@@ -12,64 +12,90 @@ export const isLoaded = ref(false);
 
 const isChrome = typeof chrome !== 'undefined' && !!chrome.bookmarks;
 
-// Fallback Mock Data for Dev / Non-extension browser testing
-const MOCK_BOOKMARKS: BookmarkItem[] = [
+export const isDemoMode = ref(
+  typeof window !== 'undefined' &&
+  (new URLSearchParams(window.location.search).has('demo') ||
+   window.localStorage.getItem('ntab_demo_mode') === 'true')
+);
+
+export function toggleDemoMode(enable?: boolean): void {
+  const next = enable !== undefined ? enable : !isDemoMode.value;
+  isDemoMode.value = next;
+  if (typeof window !== 'undefined') {
+    if (next) {
+      window.localStorage.setItem('ntab_demo_mode', 'true');
+    } else {
+      window.localStorage.removeItem('ntab_demo_mode');
+    }
+  }
+  loadBookmarks();
+}
+
+const GLOBAL_SHOWCASE_BOOKMARKS: BookmarkItem[] = [
   {
     id: '1',
-    title: '书签栏 (Bookmarks Bar)',
+    title: 'Bookmarks Bar',
     children: [
       {
         id: '101',
         parentId: '1',
-        title: '常用工具 (Daily Tools)',
+        title: 'Dev & Engineering',
         children: [
           { id: '1011', parentId: '101', title: 'GitHub', url: 'https://github.com' },
-          { id: '1012', parentId: '101', title: 'V2EX', url: 'https://v2ex.com' },
-          { id: '1013', parentId: '101', title: '掘金', url: 'https://juejin.cn' },
-          { id: '1014', parentId: '101', title: 'NAS 控制台 (UGREEN)', url: 'http://192.168.31.103' },
+          { id: '1012', parentId: '101', title: 'Vercel', url: 'https://vercel.com' },
+          { id: '1013', parentId: '101', title: 'Linear', url: 'https://linear.app' },
+          { id: '1014', parentId: '101', title: 'Supabase', url: 'https://supabase.com' },
+          { id: '1015', parentId: '101', title: 'Tailwind CSS', url: 'https://tailwindcss.com' },
+          { id: '1016', parentId: '101', title: 'TypeScript', url: 'https://www.typescriptlang.org' },
+          { id: '1017', parentId: '101', title: 'Vue.js', url: 'https://vuejs.org' },
+          { id: '1018', parentId: '101', title: 'Next.js', url: 'https://nextjs.org' },
         ],
       },
       {
         id: '102',
         parentId: '1',
-        title: '开发文档 (Docs)',
+        title: 'AI & Research',
         children: [
-          { id: '1021', parentId: '102', title: 'Vue.js 官方文档', url: 'https://vuejs.org' },
-          { id: '1022', parentId: '102', title: 'Tailwind CSS v4', url: 'https://tailwindcss.com' },
-          { id: '1023', parentId: '102', title: 'MDN Web Docs', url: 'https://developer.mozilla.org' },
-          { id: '1024', parentId: '102', title: 'Chrome Extensions Docs', url: 'https://developer.chrome.com/docs/extensions/' },
+          { id: '1021', parentId: '102', title: 'ChatGPT', url: 'https://chatgpt.com' },
+          { id: '1022', parentId: '102', title: 'Claude', url: 'https://claude.ai' },
+          { id: '1023', parentId: '102', title: 'Perplexity AI', url: 'https://perplexity.ai' },
+          { id: '1024', parentId: '102', title: 'DeepSeek', url: 'https://deepseek.com' },
+          { id: '1025', parentId: '102', title: 'Hugging Face', url: 'https://huggingface.co' },
+          { id: '1026', parentId: '102', title: 'Midjourney', url: 'https://midjourney.com' },
         ],
       },
-      { id: '103', parentId: '1', title: 'Google', url: 'https://www.google.com' },
-      { id: '104', parentId: '1', title: 'YouTube', url: 'https://www.youtube.com' },
-      { id: '105', parentId: '1', title: 'ChatGPT', url: 'https://chatgpt.com' },
+      {
+        id: '103',
+        parentId: '1',
+        title: 'Design & Creative',
+        children: [
+          { id: '1031', parentId: '103', title: 'Figma', url: 'https://figma.com' },
+          { id: '1032', parentId: '103', title: 'Dribbble', url: 'https://dribbble.com' },
+          { id: '1033', parentId: '103', title: 'Unsplash', url: 'https://unsplash.com' },
+          { id: '1034', parentId: '103', title: 'Framer', url: 'https://framer.com' },
+          { id: '1035', parentId: '103', title: 'Mobbin', url: 'https://mobbin.com' },
+          { id: '1036', parentId: '103', title: 'Fontshare', url: 'https://fontshare.com' },
+        ],
+      },
+      {
+        id: '104',
+        parentId: '1',
+        title: 'Media & Social',
+        children: [
+          { id: '1041', parentId: '104', title: 'YouTube', url: 'https://youtube.com' },
+          { id: '1042', parentId: '104', title: 'X / Twitter', url: 'https://x.com' },
+          { id: '1043', parentId: '104', title: 'Spotify', url: 'https://spotify.com' },
+          { id: '1044', parentId: '104', title: 'Hacker News', url: 'https://news.ycombinator.com' },
+          { id: '1045', parentId: '104', title: 'Reddit', url: 'https://reddit.com' },
+          { id: '1046', parentId: '104', title: 'The Verge', url: 'https://theverge.com' },
+        ],
+      },
     ],
   },
   {
     id: '2',
-    title: '其他书签 (Other Bookmarks)',
-    children: [
-      {
-        id: '201',
-        parentId: '2',
-        title: '影音娱乐',
-        children: [
-          { id: '2011', parentId: '201', title: 'Bilibili', url: 'https://www.bilibili.com' },
-          { id: '2012', parentId: '201', title: 'Netflix', url: 'https://www.netflix.com' },
-          { id: '2013', parentId: '201', title: 'Spotify', url: 'https://open.spotify.com' },
-        ],
-      },
-      {
-        id: '202',
-        parentId: '2',
-        title: '家庭内网与服务',
-        children: [
-          { id: '2021', parentId: '202', title: 'Nginx Proxy Manager', url: 'http://192.168.31.103:10081' },
-          { id: '2022', parentId: '202', title: '打卡管理系统 (Clock-in)', url: 'http://192.168.31.103:3000' },
-          { id: '2023', parentId: '202', title: '动态 DNS (ddns-go)', url: 'http://192.168.31.103:9876' },
-        ],
-      },
-    ],
+    title: 'Other Bookmarks',
+    children: [],
   },
 ];
 
@@ -85,12 +111,11 @@ function indexNodes(nodes: BookmarkItem[], fMap: Map<string, BookmarkItem>, allM
 
 // Fetch all bookmarks
 export async function loadBookmarks(): Promise<void> {
-  if (!isChrome) {
-    // Local Dev Mock
-    rawBookmarkTree.value = MOCK_BOOKMARKS;
+  if (!isChrome || isDemoMode.value) {
+    rawBookmarkTree.value = GLOBAL_SHOWCASE_BOOKMARKS;
     const newFMap = new Map<string, BookmarkItem>();
     const newAllMap = new Map<string, BookmarkItem>();
-    indexNodes(MOCK_BOOKMARKS, newFMap, newAllMap);
+    indexNodes(GLOBAL_SHOWCASE_BOOKMARKS, newFMap, newAllMap);
     folderMap.value = newFMap;
     allBookmarksMap.value = newAllMap;
     loadMockTopSites();
@@ -359,9 +384,9 @@ export async function moveBookmark(
       return false;
     }
 
-    const detached = detachNode(MOCK_BOOKMARKS, id);
+    const detached = detachNode(GLOBAL_SHOWCASE_BOOKMARKS, id);
     if (detached) {
-      attachNode(MOCK_BOOKMARKS, targetParentId, detached, targetIndex);
+      attachNode(GLOBAL_SHOWCASE_BOOKMARKS, targetParentId, detached, targetIndex);
       await loadBookmarks();
       return true;
     }

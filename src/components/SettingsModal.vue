@@ -27,6 +27,7 @@ import {
   Play,
   Square,
   CheckCircle2,
+  Camera,
 } from '@lucide/vue';
 import {
   checkerState,
@@ -72,6 +73,8 @@ import {
   loadTopSites,
   loadRecentlyClosed,
   batchRemoveBookmarks,
+  isDemoMode,
+  toggleDemoMode,
 } from '../services/bookmarks';
 import { t, LANGUAGE_OPTIONS, activeLanguage } from '../locales';
 import {
@@ -420,7 +423,7 @@ function handleImport() {
               v-if="currentGoogleUser"
               @click="activeTab = 'backup'"
               class="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-zinc-800/80 border border-slate-200/60 dark:border-white/5 cursor-pointer hover:border-indigo-400 transition-colors"
-              :title="`${currentGoogleUser.email} (点击管理同步)`"
+              :title="`${currentGoogleUser.email} (${t('auth.manageSync') || '点击管理同步'})`"
             >
               <img
                 v-if="currentGoogleUser.picture"
@@ -984,15 +987,15 @@ function handleImport() {
               <div class="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-9 gap-1.5 text-xs">
                 <button
                   v-for="preset in [
-                    { label: '10%', sub: '10列', val: 10 },
-                    { label: '12.5%', sub: '8列', val: 12.5 },
-                    { label: '14%', sub: '7列', val: 14 },
-                    { label: '16.6%', sub: '6列', val: 16.6 },
-                    { label: '20%', sub: '5列', val: 20 },
-                    { label: '25%', sub: '4列', val: 25 },
-                    { label: '33.3%', sub: '3列', val: 33.3 },
-                    { label: '50%', sub: '2列', val: 50 },
-                    { label: '100%', sub: '1列', val: 100 },
+                    { label: '10%', cols: 10, val: 10 },
+                    { label: '12.5%', cols: 8, val: 12.5 },
+                    { label: '14%', cols: 7, val: 14 },
+                    { label: '16.6%', cols: 6, val: 16.6 },
+                    { label: '20%', cols: 5, val: 20 },
+                    { label: '25%', cols: 4, val: 25 },
+                    { label: '33.3%', cols: 3, val: 33.3 },
+                    { label: '50%', cols: 2, val: 50 },
+                    { label: '100%', cols: 1, val: 100 },
                   ]"
                   :key="preset.val"
                   type="button"
@@ -1003,7 +1006,9 @@ function handleImport() {
                     : 'border-slate-200/80 dark:border-white/10 text-slate-600 dark:text-zinc-400 hover:bg-black/5 dark:hover:bg-white/5'"
                 >
                   <span class="font-mono text-xs">{{ preset.label }}</span>
-                  <span class="text-[9px] opacity-70 leading-none mt-0.5">{{ preset.sub }}</span>
+                  <span class="text-[9px] opacity-70 leading-none mt-0.5 whitespace-nowrap">
+                    {{ preset.cols === 1 ? t('settings.columnCountSingle') : t('settings.columnCount', { count: preset.cols }) }}
+                  </span>
                 </button>
               </div>
 
@@ -1350,7 +1355,7 @@ function handleImport() {
 
               <!-- Localhost dev warning banner -->
               <div v-if="!isRealExtension" class="p-2 rounded-xl bg-amber-500/15 text-amber-800 dark:text-amber-300 text-[11px] leading-relaxed">
-                ⚠️ 当前在开发调试模式 (localhost)，浏览器安全限制会导致外部站点跨域失败。打包为 Chrome 扩展后将具有完全跨域探测权限。
+                {{ t('healthCheck.devNotice') }}
               </div>
             </div>
 
@@ -1594,7 +1599,7 @@ function handleImport() {
                 <div class="w-56 h-56 rounded-xl overflow-hidden bg-white p-2 flex items-center justify-center shadow-inner">
                   <img
                     src="/img/wechatpay.png"
-                    alt="微信赞赏码"
+                    :alt="t('donate.wechatPay') || 'WeChat Pay'"
                     class="w-full h-full object-contain select-none"
                   />
                 </div>
@@ -1610,7 +1615,7 @@ function handleImport() {
                 <div class="w-56 h-56 rounded-xl overflow-hidden bg-white p-2 flex items-center justify-center shadow-inner">
                   <img
                     src="/img/alipay.png"
-                    alt="支付宝收款码"
+                    :alt="t('donate.alipay') || 'Alipay'"
                     class="w-full h-full object-contain select-none"
                   />
                 </div>
@@ -1825,6 +1830,15 @@ function handleImport() {
         <div class="px-6 py-3 border-t border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 flex items-center justify-between text-xs text-slate-400">
           <div class="flex items-center gap-3">
             <span>NTab</span>
+            <button
+              type="button"
+              @click="toggleDemoMode(); emit('close')"
+              class="flex items-center gap-1 text-indigo-600 dark:text-indigo-400 hover:underline font-medium transition-colors cursor-pointer"
+              :title="isDemoMode ? 'Exit Demo Showcase' : 'Enter 100% Private Demo Showcase with Global Tech Bookmarks'"
+            >
+              <Camera class="w-3.5 h-3.5" />
+              <span>{{ isDemoMode ? (t('settings.exitDemo') || '退出展示模式') : (t('settings.enterDemo') || '📷 宣传展示模式') }}</span>
+            </button>
             <button
               type="button"
               @click="activeTab = 'donate'"

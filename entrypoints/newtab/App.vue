@@ -17,6 +17,8 @@ import {
   batchRemoveBookmarks,
   moveBookmark,
   removeBookmark,
+  isDemoMode,
+  toggleDemoMode,
 } from '../../src/services/bookmarks';
 import {
   userSettings,
@@ -905,5 +907,23 @@ onUnmounted(() => {
       @confirm="handleConfirmDelete"
       @cancel="deleteModalState.isOpen = false"
     />
+
+    <!-- Store Demo Showcase Mode Floating Badge -->
+    <div
+      v-if="isDemoMode"
+      class="fixed bottom-5 right-5 z-50 flex items-center gap-2.5 px-3.5 py-1.5 rounded-2xl bg-indigo-600/90 text-white text-xs shadow-2xl backdrop-blur-md border border-indigo-400/40 select-none animate-in fade-in duration-150"
+    >
+      <span class="font-medium flex items-center gap-1.5">
+        <span>📷</span>
+        <span>Showcase Mode (100% Private Demo)</span>
+      </span>
+      <button
+        type="button"
+        @click="toggleDemoMode(false)"
+        class="ml-1 px-2.5 py-0.5 rounded-xl bg-white/20 hover:bg-white/30 text-white font-semibold cursor-pointer transition-colors"
+      >
+        Exit
+      </button>
+    </div>
   </div>
 </template>

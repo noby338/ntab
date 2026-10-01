@@ -69,14 +69,14 @@ const emit = defineEmits<{
   ): void;
 }>();
 
-const CHROME_APPS_LIST: BookmarkItem[] = [
-  { id: 'app-apps', title: 'Chrome 应用 (Apps)', url: 'chrome://apps', isSpecial: true },
-  { id: 'app-extensions', title: '扩展程序管理 (Extensions)', url: 'chrome://extensions', isSpecial: true },
-  { id: 'app-bookmarks', title: '书签管理器 (Bookmarks)', url: 'chrome://bookmarks', isSpecial: true },
-  { id: 'app-history', title: '浏览历史记录 (History)', url: 'chrome://history', isSpecial: true },
-  { id: 'app-downloads', title: '下载内容 (Downloads)', url: 'chrome://downloads', isSpecial: true },
-  { id: 'app-webstore', title: 'Chrome 网上应用店', url: 'https://chromewebstore.google.com', isSpecial: true },
-];
+const chromeAppsList = computed<BookmarkItem[]>(() => [
+  { id: 'app-apps', title: t('card.appApps') || 'Chrome Apps', url: 'chrome://apps', isSpecial: true },
+  { id: 'app-extensions', title: t('card.appExtensions') || 'Extensions', url: 'chrome://extensions', isSpecial: true },
+  { id: 'app-bookmarks', title: t('card.appBookmarks') || 'Bookmarks Manager', url: 'chrome://bookmarks', isSpecial: true },
+  { id: 'app-history', title: t('card.appHistory') || 'History', url: 'chrome://history', isSpecial: true },
+  { id: 'app-downloads', title: t('card.appDownloads') || 'Downloads', url: 'chrome://downloads', isSpecial: true },
+  { id: 'app-webstore', title: t('card.appWebstore') || 'Chrome Web Store', url: 'https://chromewebstore.google.com', isSpecial: true },
+]);
 
 function formatRelativeTime(timestamp: number): string {
   const diff = Math.max(0, Date.now() - timestamp);
@@ -187,7 +187,7 @@ const folderData = computed<BookmarkItem | null>(() => {
     return {
       id: 'apps',
       title: t('card.specialApps'),
-      children: CHROME_APPS_LIST,
+      children: chromeAppsList.value,
       isSpecial: true,
       unmodifiable: 'managed',
     };

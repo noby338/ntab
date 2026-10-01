@@ -1,6 +1,7 @@
 import { ref } from 'vue';
 import type { BookmarkItem } from '../types';
 import { loadBookmarks } from './bookmarks';
+import { t } from '../locales';
 
 export interface DeletedItem {
   id: string;
@@ -81,7 +82,7 @@ function convertBookmarkToDeleted(node: BookmarkItem): DeletedItem {
   return {
     id: `trash_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     originalId: node.id,
-    title: node.title || (node.url ? node.url : '未命名书签'),
+    title: node.title || (node.url ? node.url : (t('common.unnamed') || 'Untitled')),
     url: node.url,
     parentId: node.parentId,
     deletedAt: Date.now(),

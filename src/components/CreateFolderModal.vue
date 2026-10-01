@@ -15,7 +15,7 @@ const emit = defineEmits<{
 }>();
 
 const folderName = ref('');
-const selectedParentId = ref('1');
+const selectedParentId = ref('2');
 const asStandaloneCard = ref(true);
 const isSubmitting = ref(false);
 
@@ -24,7 +24,7 @@ watch(
   (open) => {
     if (open) {
       folderName.value = '';
-      selectedParentId.value = props.initialParentId || '1';
+      selectedParentId.value = props.initialParentId || '2';
       asStandaloneCard.value = true;
     }
   }
@@ -105,8 +105,8 @@ async function handleCreate() {
               class="w-full px-3 py-2 text-xs rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
               style="background-color: var(--item-hover); border: 1px solid var(--card-border); color: var(--text-main);"
             >
-              <option value="1">🗂️ {{ t('createFolder.bookmarksBar') }}</option>
               <option value="2">📁 {{ t('createFolder.otherBookmarks') }}</option>
+              <option value="1">🗂️ {{ t('createFolder.bookmarksBar') }}</option>
               <template v-for="[id, folder] in folderMap" :key="id">
                 <option v-if="id !== '1' && id !== '2'" :value="id">
                   ↳ {{ folder.title || t('common.unnamed') }}

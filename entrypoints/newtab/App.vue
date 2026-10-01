@@ -6,6 +6,7 @@ import {
   FolderPlus,
   EyeOff,
   Activity,
+  Heart,
 } from '@lucide/vue';
 import {
   loadBookmarks,
@@ -87,8 +88,20 @@ function handleButtonsLeave() {
 
 const selectedIds = ref<Set<string>>(new Set());
 const isSettingsOpen = ref(false);
+const settingsInitialTab = ref<'appearance' | 'layout' | 'shortcuts' | 'donate' | 'backup'>('appearance');
+
+function openDonateSettings() {
+  settingsInitialTab.value = 'donate';
+  isSettingsOpen.value = true;
+}
+
+function openGeneralSettings() {
+  settingsInitialTab.value = 'appearance';
+  isSettingsOpen.value = true;
+}
+
 const isCreateFolderOpen = ref(false);
-const createFolderParentId = ref('1');
+const createFolderParentId = ref('2');
 
 const deleteModalState = ref<{
   isOpen: boolean;
@@ -116,7 +129,7 @@ async function handleConfirmDelete() {
   await deleteModalState.value.onConfirm();
 }
 
-function openCreateFolder(parentId = '1') {
+function openCreateFolder(parentId = '2') {
   createFolderParentId.value = parentId;
   isCreateFolderOpen.value = true;
 }
@@ -306,7 +319,7 @@ async function handleMainDrop(event: DragEvent) {
 
   if (target.type === 'column_slot') {
     if (isFromNestedFolder) {
-      await moveBookmark(dragged.id, '1');
+      await moveBookmark(dragged.id, '2');
       const currentCols = [...columnLayout.value.columns.map((c) => [...c])];
       currentCols.splice(target.slotIndex, 0, [dragged.id]);
       const cleanCols = currentCols.filter((c) => c.length > 0);
@@ -324,7 +337,7 @@ async function handleMainDrop(event: DragEvent) {
     }
   } else if (target.type === 'card_slot') {
     if (isFromNestedFolder) {
-      await moveBookmark(dragged.id, '1');
+      await moveBookmark(dragged.id, '2');
       const currentCols = [...columnLayout.value.columns.map((c) => [...c])];
       const targetCol = currentCols[target.colIndex] || [];
       if (!currentCols[target.colIndex]) currentCols[target.colIndex] = targetCol;
@@ -478,7 +491,7 @@ onUnmounted(() => {
         <!-- Create Folder Button -->
         <button
           type="button"
-          @click="openCreateFolder('1')"
+          @click="openCreateFolder('2')"
           :title="t('header.newFolder')"
           class="p-1.5 rounded-xl border border-slate-200/90 dark:border-white/10 bg-white/80 dark:bg-white/5 hover:bg-white dark:hover:bg-white/15 text-slate-800 dark:text-zinc-200 shadow-2xs transition-colors cursor-pointer flex items-center justify-center"
         >
@@ -510,6 +523,16 @@ onUnmounted(() => {
           <Activity class="w-3.5 h-3.5" />
         </button>
 
+        <!-- Sponsor / Donate Button (Unified Monochrome) -->
+        <button
+          type="button"
+          @click="openDonateSettings"
+          :title="t('settings.tabDonate') || '赞赏支持'"
+          class="p-1.5 rounded-xl border border-slate-200/90 dark:border-white/10 bg-white/80 dark:bg-white/5 hover:bg-white dark:hover:bg-white/15 text-slate-800 dark:text-zinc-200 shadow-2xs transition-colors cursor-pointer flex items-center justify-center flex-shrink-0"
+        >
+          <Heart class="w-3.5 h-3.5 text-slate-800 dark:text-white" />
+        </button>
+
         <!-- GitHub Repo Link Button -->
         <a
           href="https://github.com/noby338/ntab"
@@ -524,7 +547,7 @@ onUnmounted(() => {
         <!-- Settings Button -->
         <button
           type="button"
-          @click="isSettingsOpen = true"
+          @click="openGeneralSettings"
           :title="t('header.settings')"
           class="p-1.5 rounded-xl border border-slate-200/90 dark:border-white/10 bg-white/80 dark:bg-white/5 hover:bg-white dark:hover:bg-white/15 text-slate-800 dark:text-zinc-200 shadow-2xs transition-colors cursor-pointer flex items-center justify-center"
         >
@@ -612,7 +635,7 @@ onUnmounted(() => {
         <!-- Create Folder Button -->
         <button
           type="button"
-          @click="openCreateFolder('1')"
+          @click="openCreateFolder('2')"
           :title="t('header.newFolder')"
           class="rounded-xl border border-slate-200/90 dark:border-white/10 bg-white/80 dark:bg-white/5 hover:bg-white dark:hover:bg-white/15 text-slate-800 dark:text-zinc-200 shadow-2xs transition-colors cursor-pointer flex items-center justify-center p-2"
         >
@@ -644,6 +667,16 @@ onUnmounted(() => {
           <Activity class="w-3.5 h-3.5" />
         </button>
 
+        <!-- Sponsor / Donate Button (Unified Monochrome) -->
+        <button
+          type="button"
+          @click="openDonateSettings"
+          :title="t('settings.tabDonate') || '赞赏支持'"
+          class="rounded-xl border border-slate-200/90 dark:border-white/10 bg-white/80 dark:bg-white/5 hover:bg-white dark:hover:bg-white/15 text-slate-800 dark:text-zinc-200 shadow-2xs transition-colors cursor-pointer flex items-center justify-center p-2 flex-shrink-0"
+        >
+          <Heart class="w-3.5 h-3.5 text-slate-800 dark:text-white" />
+        </button>
+
         <!-- GitHub Repo Link Button -->
         <a
           href="https://github.com/noby338/ntab"
@@ -658,7 +691,7 @@ onUnmounted(() => {
         <!-- Settings Button -->
         <button
           type="button"
-          @click="isSettingsOpen = true"
+          @click="openGeneralSettings"
           :title="t('header.settings')"
           class="rounded-xl border border-slate-200/90 dark:border-white/10 bg-white/80 dark:bg-white/5 hover:bg-white dark:hover:bg-white/15 text-slate-800 dark:text-zinc-200 shadow-2xs transition-colors cursor-pointer flex items-center justify-center p-2"
         >
@@ -772,6 +805,7 @@ onUnmounted(() => {
     <!-- Settings Modal -->
     <SettingsModal
       :is-open="isSettingsOpen"
+      :initial-tab="settingsInitialTab"
       @close="isSettingsOpen = false"
     />
 

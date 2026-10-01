@@ -73,8 +73,9 @@ import {
 import AdvancedConfigModal from './AdvancedConfigModal.vue';
 import type { ThemeMode } from '../types';
 
-defineProps<{
+const props = defineProps<{
   isOpen: boolean;
+  initialTab?: 'appearance' | 'layout' | 'shortcuts' | 'donate' | 'backup';
 }>();
 
 const emit = defineEmits<{
@@ -82,6 +83,24 @@ const emit = defineEmits<{
 }>();
 
 const activeTab = ref<'appearance' | 'layout' | 'shortcuts' | 'donate' | 'backup'>('appearance');
+
+watch(
+  () => props.isOpen,
+  (open) => {
+    if (open && props.initialTab) {
+      activeTab.value = props.initialTab;
+    }
+  }
+);
+
+watch(
+  () => props.initialTab,
+  (tab) => {
+    if (tab) {
+      activeTab.value = tab;
+    }
+  }
+);
 
 const isZh = computed(() => activeLanguage.value === 'zh-CN' || activeLanguage.value === 'zh-TW');
 

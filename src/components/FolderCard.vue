@@ -254,9 +254,9 @@ const cardTypeMeta = computed<{
   if (props.folderId === 'recently_deleted') {
     return {
       type: 'recently-deleted',
-      badge: t('card.badge7Days') || '7天保留',
+      badge: null,
       iconColor: 'text-rose-500',
-      badgeClass: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
+      badgeClass: '',
     };
   }
   return {
@@ -594,39 +594,62 @@ async function handleFolderDrop(event: DragEvent) {
     >
       <!-- Special Case: Recently Deleted (7-day trash) -->
       <template v-if="folderId === 'recently_deleted'">
-        <div v-if="recentlyDeletedList.length > 0" class="flex flex-col space-y-0.5">
+        <div v-if="recentlyDeletedList.length > 0" class="flex flex-col">
           <div
             v-for="item in recentlyDeletedList"
             :key="item.id"
-            class="group/trash flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-colors text-xs select-none"
+            class="group/trash relative flex items-center rounded-lg cursor-pointer transition-colors overflow-hidden select-none hover:bg-slate-200/70 dark:hover:bg-white/10 text-slate-900 dark:text-zinc-100"
+            :style="{
+              fontSize: 'var(--bookmark-font-size, 14px)',
+              height: 'var(--bookmark-row-height, 32px)',
+              minHeight: 'var(--bookmark-row-height, 32px)',
+              transitionDuration: 'var(--hover-duration, 75ms)',
+              paddingLeft: 'clamp(4px, calc(var(--bookmark-row-height, 32px) * 0.22), 10px)',
+              paddingRight: 'clamp(4px, calc(var(--bookmark-row-height, 32px) * 0.22), 10px)',
+              gap: 'clamp(4px, calc(var(--bookmark-row-height, 32px) * 0.22), 10px)',
+            }"
+            :title="`${item.title}${item.url ? '\n' + item.url : ''}\n${formatRelativeTime(item.deletedAt)}`"
           >
-            <div class="flex items-center gap-2 flex-1 min-w-0 mr-2">
+            <!-- Logo Icon Box -->
+            <div
+              class="flex-shrink-0 rounded-md bg-slate-100 dark:bg-white/10 flex items-center justify-center shadow-2xs overflow-hidden"
+              :style="{
+                width: 'clamp(12px, calc(var(--bookmark-row-height, 32px) - 6px), 20px)',
+                height: 'clamp(12px, calc(var(--bookmark-row-height, 32px) - 6px), 20px)',
+                padding: 'clamp(1px, calc(var(--bookmark-row-height, 32px) * 0.05), 2px)',
+              }"
+            >
+              <Folder v-if="item.isFolder" class="w-full h-full max-w-full max-h-full object-contain text-amber-500" />
               <img
-                v-if="item.url"
+                v-else-if="item.url"
                 :src="getFaviconUrl(item.url)"
-                class="w-4 h-4 rounded-xs flex-shrink-0"
+                class="w-full h-full max-w-full max-h-full rounded-xs object-contain"
+                loading="lazy"
                 alt=""
                 @error="($event.target as HTMLElement).style.display = 'none'"
               />
-              <Folder v-else-if="item.isFolder" class="w-4 h-4 text-amber-500 flex-shrink-0" />
-              <Globe v-else class="w-4 h-4 text-slate-400 flex-shrink-0" />
-
-              <div class="flex-1 min-w-0">
-                <div class="truncate text-slate-800 dark:text-zinc-200 font-medium leading-tight">{{ item.title }}</div>
-                <div class="flex items-center gap-1.5 text-[10px] text-slate-400 dark:text-zinc-500 leading-tight">
-                  <span class="truncate max-w-[120px] font-mono">{{ item.url ? getHostname(item.url) : '文件夹' }}</span>
-                  <span>·</span>
-                  <span class="flex-shrink-0">{{ formatRelativeTime(item.deletedAt) }}</span>
-                </div>
-              </div>
+              <Globe v-else class="w-full h-full max-w-full max-h-full object-contain text-slate-400" />
             </div>
 
-            <div class="flex items-center gap-1 opacity-0 group-hover/trash:opacity-100 transition-opacity flex-shrink-0">
+            <!-- Title -->
+            <span class="truncate flex-1 min-w-0 leading-none">
+              {{ item.title }}
+            </span>
+
+            <!-- Passive Relative Time -->
+            <span
+              class="text-[11px] text-slate-400 dark:text-zinc-500 font-mono truncate flex-shrink-0 opacity-75 group-hover/trash:hidden leading-none"
+            >
+              {{ formatRelativeTime(item.deletedAt) }}
+            </span>
+
+            <!-- Hover Action Buttons -->
+            <div class="hidden group-hover/trash:flex items-center gap-0.5 flex-shrink-0">
               <button
                 type="button"
                 @click.stop="restoreBookmark(item.id)"
                 :title="t('card.restoreBookmark') || '恢复书签'"
-                class="p-1 rounded-md text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer"
+                class="p-1 rounded-md text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/15 cursor-pointer transition-colors"
               >
                 <RotateCcw class="w-3.5 h-3.5" />
               </button>
@@ -634,7 +657,7 @@ async function handleFolderDrop(event: DragEvent) {
                 type="button"
                 @click.stop="permanentlyDelete(item.id)"
                 :title="t('card.permanentDelete') || '彻底删除'"
-                class="p-1 rounded-md text-rose-500 hover:bg-rose-500/10 cursor-pointer"
+                class="p-1 rounded-md text-rose-500 hover:bg-rose-500/15 cursor-pointer transition-colors"
               >
                 <Trash2 class="w-3.5 h-3.5" />
               </button>

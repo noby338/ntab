@@ -405,7 +405,7 @@ function handleImport() {
       @click.self="emit('close')"
     >
       <div
-        class="w-full max-w-xl h-[640px] max-h-[90vh] flex flex-col theme-popover rounded-3xl shadow-2xl overflow-hidden"
+        class="w-full max-w-2xl h-[650px] max-h-[90vh] flex flex-col theme-popover rounded-3xl shadow-2xl overflow-hidden"
         style="font-size: 14px;"
       >
         <div
@@ -453,11 +453,11 @@ function handleImport() {
           </button>
         </div>
 
-        <div class="flex items-center px-6 gap-2 border-b border-black/5 dark:border-white/5 bg-black/2 dark:bg-white/2 text-xs font-medium">
+        <div class="flex items-center px-6 gap-1 border-b border-black/5 dark:border-white/5 bg-black/2 dark:bg-white/2 text-xs font-medium overflow-x-auto whitespace-nowrap">
           <button
             type="button"
             @click="activeTab = 'appearance'"
-            class="flex items-center gap-1.5 py-3 border-b-2 transition-colors cursor-pointer"
+            class="flex items-center gap-1.5 py-3 px-2 border-b-2 transition-colors cursor-pointer whitespace-nowrap flex-shrink-0"
             :class="[
               activeTab === 'appearance'
                 ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
@@ -471,7 +471,7 @@ function handleImport() {
           <button
             type="button"
             @click="activeTab = 'layout'"
-            class="flex items-center gap-1.5 py-3 border-b-2 transition-colors cursor-pointer"
+            class="flex items-center gap-1.5 py-3 px-2 border-b-2 transition-colors cursor-pointer whitespace-nowrap flex-shrink-0"
             :class="[
               activeTab === 'layout'
                 ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
@@ -485,7 +485,7 @@ function handleImport() {
           <button
             type="button"
             @click="activeTab = 'shortcuts'"
-            class="flex items-center gap-1.5 py-3 border-b-2 transition-colors cursor-pointer"
+            class="flex items-center gap-1.5 py-3 px-2 border-b-2 transition-colors cursor-pointer whitespace-nowrap flex-shrink-0"
             :class="[
               activeTab === 'shortcuts'
                 ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
@@ -499,7 +499,7 @@ function handleImport() {
           <button
             type="button"
             @click="activeTab = 'health'"
-            class="flex items-center gap-1.5 py-3 border-b-2 transition-colors cursor-pointer"
+            class="flex items-center gap-1.5 py-3 px-2 border-b-2 transition-colors cursor-pointer whitespace-nowrap flex-shrink-0"
             :class="[
               activeTab === 'health'
                 ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400 font-semibold'
@@ -507,7 +507,7 @@ function handleImport() {
             ]"
           >
             <Activity class="w-4 h-4" />
-            <span>{{ t('healthCheck.title') || '失效检测' }}</span>
+            <span>{{ t('settings.tabHealth') || t('healthCheck.title') || '失效检测' }}</span>
             <span
               v-if="dead404Results.length > 0"
               class="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-red-500 text-white"
@@ -519,7 +519,7 @@ function handleImport() {
           <button
             type="button"
             @click="activeTab = 'donate'"
-            class="flex items-center gap-1.5 py-3 border-b-2 transition-colors cursor-pointer"
+            class="flex items-center gap-1.5 py-3 px-2 border-b-2 transition-colors cursor-pointer whitespace-nowrap flex-shrink-0"
             :class="[
               activeTab === 'donate'
                 ? 'border-pink-500 text-pink-600 dark:border-pink-400 dark:text-pink-400'
@@ -533,7 +533,7 @@ function handleImport() {
           <button
             type="button"
             @click="activeTab = 'backup'; handleExport()"
-            class="flex items-center gap-1.5 py-3 border-b-2 transition-colors cursor-pointer"
+            class="flex items-center gap-1.5 py-3 px-2 border-b-2 transition-colors cursor-pointer whitespace-nowrap flex-shrink-0"
             :class="[
               activeTab === 'backup'
                 ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
@@ -1155,17 +1155,17 @@ function handleImport() {
           <!-- Shortcuts Tab -->
           <div v-if="activeTab === 'shortcuts'" class="space-y-6">
             <div class="flex items-center justify-between p-3.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-xs">
-              <div class="flex items-center gap-2.5">
+              <div class="flex items-center gap-2.5 min-w-0 mr-3">
                 <Keyboard class="w-5 h-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
-                <div>
-                  <div class="font-bold text-slate-800 dark:text-zinc-100">{{ t('shortcuts.title') || '快捷键偏好设置' }}</div>
-                  <div class="text-[11px] text-slate-500 dark:text-zinc-400">{{ t('shortcuts.desc') || '点击按键药丸即可录制自定义快捷键，支持全局瞬时响应' }}</div>
+                <div class="min-w-0">
+                  <div class="font-bold text-slate-800 dark:text-zinc-100 truncate">{{ t('shortcuts.title') || '快捷键偏好设置' }}</div>
+                  <div class="text-[11px] text-slate-500 dark:text-zinc-400 truncate">{{ t('shortcuts.desc') || '点击按键药丸即可录制自定义快捷键，支持全局瞬时响应' }}</div>
                 </div>
               </div>
               <button
                 type="button"
                 @click="resetAllShortcuts"
-                class="px-2.5 py-1 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors text-[11px] font-medium cursor-pointer"
+                class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors text-xs font-medium cursor-pointer whitespace-nowrap flex-shrink-0"
               >
                 {{ t('shortcuts.resetAll') || '恢复全部默认' }}
               </button>
@@ -1269,23 +1269,23 @@ function handleImport() {
             <!-- Header Status Card -->
             <div class="p-3.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-xs space-y-3">
               <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2.5">
+                <div class="flex items-center gap-2.5 min-w-0 mr-3">
                   <Activity class="w-5 h-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
-                  <div>
-                    <div class="font-bold text-slate-800 dark:text-zinc-100">{{ t('healthCheck.title') || '失效检测' }}</div>
-                    <div class="text-[11px] text-slate-500 dark:text-zinc-400">
+                  <div class="min-w-0">
+                    <div class="font-bold text-slate-800 dark:text-zinc-100 truncate">{{ t('healthCheck.title') || '失效检测' }}</div>
+                    <div class="text-[11px] text-slate-500 dark:text-zinc-400 truncate">
                       {{ t('healthCheck.subtitle') || '超轻量探测 · 仅检测 404 与 403 明确状态' }}
                     </div>
                   </div>
                 </div>
 
                 <!-- Controls -->
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 flex-shrink-0">
                   <button
                     v-if="checkerState.isRunning"
                     type="button"
                     @click="handleStopHealthCheck"
-                    class="px-3 py-1 rounded-xl bg-red-600 hover:bg-red-700 text-white font-medium text-xs transition-colors cursor-pointer flex items-center gap-1"
+                    class="px-3.5 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-medium text-xs transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap flex-shrink-0"
                   >
                     <Square class="w-3.5 h-3.5 fill-current" />
                     <span>{{ t('healthCheck.pause') || '停止' }}</span>
@@ -1294,7 +1294,7 @@ function handleImport() {
                     v-else
                     type="button"
                     @click="startHealthCheck"
-                    class="px-3.5 py-1 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-xs shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                    class="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-xs shadow-xs transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap flex-shrink-0"
                   >
                     <Play class="w-3 h-3 fill-current" />
                     <span>{{ checkerState.completed > 0 ? (t('healthCheck.recheck') || '重新检测') : (t('healthCheck.start') || '开始检测') }}</span>
@@ -1327,11 +1327,11 @@ function handleImport() {
             </div>
 
             <!-- Tab Switcher: 404 vs 403 only -->
-            <div class="flex items-center gap-2 border-b border-black/5 dark:border-white/5 text-xs font-medium">
+            <div class="flex items-center gap-3 border-b border-black/5 dark:border-white/5 text-xs font-medium overflow-x-auto whitespace-nowrap">
               <button
                 type="button"
                 @click="healthTab = 'dead_404'"
-                class="flex items-center gap-1.5 py-2 border-b-2 transition-colors cursor-pointer"
+                class="flex items-center gap-1.5 py-2 border-b-2 transition-colors cursor-pointer whitespace-nowrap flex-shrink-0"
                 :class="[
                   healthTab === 'dead_404'
                     ? 'border-red-600 text-red-600 dark:border-red-400 dark:text-red-400 font-semibold'
@@ -1351,7 +1351,7 @@ function handleImport() {
               <button
                 type="button"
                 @click="healthTab = 'blocked_403'"
-                class="flex items-center gap-1.5 py-2 border-b-2 transition-colors cursor-pointer"
+                class="flex items-center gap-1.5 py-2 border-b-2 transition-colors cursor-pointer whitespace-nowrap flex-shrink-0"
                 :class="[
                   healthTab === 'blocked_403'
                     ? 'border-amber-600 text-amber-600 dark:border-amber-400 dark:text-amber-400 font-semibold'
@@ -1641,18 +1641,18 @@ function handleImport() {
             <!-- Google Cloud Sync Card -->
             <div class="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-sm space-y-3.5">
               <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2.5">
-                  <div class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-zinc-800 flex items-center justify-center p-1.5 shadow-2xs">
+                <div class="flex items-center gap-2.5 min-w-0 mr-3">
+                  <div class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-zinc-800 flex items-center justify-center p-1.5 shadow-2xs flex-shrink-0">
                     <SearchEngineIcon engine-id="google" size-class="w-5 h-5" />
                   </div>
-                  <div>
-                    <div class="font-bold text-xs text-slate-800 dark:text-zinc-100 flex items-center gap-1.5">
+                  <div class="min-w-0">
+                    <div class="font-bold text-xs text-slate-800 dark:text-zinc-100 flex items-center gap-1.5 truncate">
                       <span>{{ t('auth.googleSyncTitle') || 'Google 账号云同步' }}</span>
-                      <span class="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium">
+                      <span class="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium flex-shrink-0">
                         {{ t('auth.offlineSupported') || '免登录可用' }}
                       </span>
                     </div>
-                    <div class="text-[11px] text-slate-400">
+                    <div class="text-[11px] text-slate-400 truncate">
                       {{ t('auth.googleSyncDesc') || '自动在云端备份排版布局与个性化设置，换机登录一键快速恢复' }}
                     </div>
                   </div>
@@ -1662,7 +1662,7 @@ function handleImport() {
                   v-if="currentGoogleUser"
                   type="button"
                   @click="logoutGoogle"
-                  class="px-2.5 py-1 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 text-slate-500 hover:text-red-500 hover:border-red-500/30 transition-colors cursor-pointer"
+                  class="px-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 text-slate-500 hover:text-red-500 hover:border-red-500/30 transition-colors cursor-pointer whitespace-nowrap flex-shrink-0"
                 >
                   {{ t('auth.signOut') || '退出登录' }}
                 </button>

@@ -194,6 +194,7 @@ export const zhTW: LocaleMessages = {
     tabAppearance: '外觀樣式',
     tabLayout: '排版佈局',
     tabShortcuts: '快捷鍵',
+    tabHealth: '失效檢測',
     tabDonate: '贊賞支持',
     tabBackup: '帳號配置',
     supportDeveloper: '請作者喝杯咖啡',

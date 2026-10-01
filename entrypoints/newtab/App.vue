@@ -43,6 +43,7 @@ import {
   endCardDrag,
   type DropTarget,
 } from '../../src/services/cardDragCoordinator';
+import { setBatchSelectHandler } from '../../src/services/batchSelectionCoordinator';
 import { t, activeLanguage } from '../../src/locales';
 import { getActiveShortcut, matchesShortcut } from '../../src/services/hotkeyService';
 import type { BookmarkItem } from '../../src/types';
@@ -86,6 +87,27 @@ function handleButtonsLeave() {
 }
 
 const selectedIds = ref<Set<string>>(new Set());
+
+function setSelectState(id: string, select: boolean) {
+  if (select) {
+    if (!selectedIds.value.has(id)) {
+      const next = new Set(selectedIds.value);
+      next.add(id);
+      selectedIds.value = next;
+    }
+  } else {
+    if (selectedIds.value.has(id)) {
+      const next = new Set(selectedIds.value);
+      next.delete(id);
+      selectedIds.value = next;
+    }
+  }
+}
+
+setBatchSelectHandler((id, select) => {
+  setSelectState(id, select);
+});
+
 const isSettingsOpen = ref(false);
 const settingsInitialTab = ref<'appearance' | 'layout' | 'shortcuts' | 'health' | 'donate' | 'backup'>('appearance');
 
@@ -503,6 +525,7 @@ onMounted(async () => {
 onUnmounted(() => {
   if (clockTimer) clearInterval(clockTimer);
   window.removeEventListener('keydown', handleGlobalKeyDown);
+  setBatchSelectHandler(null);
 });
 </script>
 
@@ -639,10 +662,10 @@ onUnmounted(() => {
     <!-- Standard Top Header Bar (When Not in Compact Mode) -->
     <header
       v-if="!userSettings.compactHeader"
-      class="flex items-center justify-between select-none z-30 transition-all duration-200 px-8 py-3.5"
+      class="relative flex items-center justify-between select-none z-30 transition-all duration-200 px-8 py-3.5"
     >
       <!-- Logo & Branding -->
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 relative z-20">
         <img
           src="/wxt.svg"
           class="w-6 h-6 rounded-xl shadow-md flex-shrink-0"
@@ -653,10 +676,10 @@ onUnmounted(() => {
         </span>
       </div>
 
-      <!-- Optional Clock (Refined Size to Free Space) -->
+      <!-- Absolutely Centered Clock (Strict Optical & Geometric Center of Viewport) -->
       <div
         v-if="userSettings.showClock"
-        class="flex flex-col items-center justify-center pointer-events-none"
+        class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center pointer-events-none select-none z-10"
       >
         <span class="font-extralight tracking-tight font-mono text-slate-900 dark:text-white drop-shadow-xs leading-none text-2xl md:text-3xl">
           {{ currentTime }}
@@ -667,7 +690,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Action Buttons -->
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 relative z-20">
         <!-- Create Folder Button -->
         <button
           type="button"
@@ -768,6 +791,19 @@ onUnmounted(() => {
         </button>
       </div>
     </header>
+
+    <!-- Compact Mode Centered Clock -->
+    <div
+      v-if="userSettings.compactHeader && userSettings.showClock"
+      class="flex flex-col items-center justify-center pt-5 pb-2 pointer-events-none select-none"
+    >
+      <span class="font-extralight tracking-tight font-mono text-slate-900 dark:text-white drop-shadow-xs leading-none text-2xl md:text-3xl">
+        {{ currentTime }}
+      </span>
+      <span class="text-[11px] font-medium text-slate-600 dark:text-zinc-300 mt-1">
+        {{ currentDate }}
+      </span>
+    </div>
 
     <!-- Search Section (Higher up to save space) -->
     <section

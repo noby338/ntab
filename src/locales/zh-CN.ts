@@ -194,6 +194,7 @@ export const zhCN: LocaleMessages = {
     tabAppearance: '外观样式',
     tabLayout: '排版布局',
     tabShortcuts: '快捷键',
+    tabHealth: '失效检测',
     tabDonate: '赞赏支持',
     tabBackup: '账号配置',
     supportDeveloper: '请作者喝杯咖啡',

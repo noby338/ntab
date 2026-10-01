@@ -29,6 +29,7 @@ import {
   batchTargetSelectState,
   startBatchSelect,
   endBatchSelect,
+  triggerSelectId,
 } from '../services/batchSelectionCoordinator';
 import { t } from '../locales';
 
@@ -116,8 +117,8 @@ watch(isGlobalDragging, (dragging) => {
 function handleRowPointerDown(event: PointerEvent) {
   if (!props.isBatchMode || event.button !== 0) return;
   const willSelect = !isSelected.value;
-  startBatchSelect(willSelect);
-  emit('toggleSelect', props.node.id, event as unknown as MouseEvent);
+  startBatchSelect(willSelect, event.clientX, event.clientY);
+  triggerSelectId(props.node.id, willSelect);
 }
 
 function handleRowPointerEnter(event: PointerEvent) {
@@ -126,9 +127,7 @@ function handleRowPointerEnter(event: PointerEvent) {
     endBatchSelect();
     return;
   }
-  if (isSelected.value !== batchTargetSelectState.value) {
-    emit('toggleSelect', props.node.id, event as unknown as MouseEvent);
-  }
+  triggerSelectId(props.node.id, batchTargetSelectState.value);
 }
 
 function handleRowClick(event: MouseEvent) {

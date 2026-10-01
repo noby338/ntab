@@ -86,7 +86,7 @@ export const currentMessages = computed<LocaleMessages>(() => {
   return LOCALES[activeLanguage.value] || LOCALES.en;
 });
 
-export function t(path: string, params?: Record<string, string | number>): string {
+export function t(path: string, params?: Record<string, string | number>, defaultVal?: string): string {
   const parts = path.split('.');
   let current: any = currentMessages.value;
 
@@ -109,7 +109,7 @@ export function t(path: string, params?: Record<string, string | number>): strin
         break;
       }
     }
-    current = typeof fallback === 'string' ? fallback : path;
+    current = typeof fallback === 'string' ? fallback : (defaultVal !== undefined ? defaultVal : '');
   }
 
   if (params && typeof current === 'string') {

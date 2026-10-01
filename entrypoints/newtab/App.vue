@@ -7,7 +7,6 @@ import {
   EyeOff,
   Activity,
   Heart,
-  X,
 } from '@lucide/vue';
 import {
   loadBookmarks,
@@ -52,15 +51,7 @@ import type { BookmarkItem } from '../../src/types';
 const isBatchMode = ref(false);
 const isCornerActive = ref(false);
 const isButtonsHovered = ref(false);
-const showFooterGuideTip = ref(false);
 let cornerCloseTimer: ReturnType<typeof setTimeout> | null = null;
-
-function dismissFooterGuideTip() {
-  showFooterGuideTip.value = false;
-  try {
-    localStorage.setItem('ntab_footer_tip_dismissed', '1');
-  } catch {}
-}
 
 function handleCornerEnter() {
   if (cornerCloseTimer) {
@@ -506,15 +497,6 @@ onMounted(async () => {
   await loadColumnLayout(rawBookmarkTree.value);
   setupBookmarkListeners();
 
-  if (typeof localStorage !== 'undefined') {
-    const dismissed = localStorage.getItem('ntab_footer_tip_dismissed');
-    if (!dismissed) {
-      setTimeout(() => {
-        showFooterGuideTip.value = true;
-      }, 1500);
-    }
-  }
-
   window.addEventListener('keydown', handleGlobalKeyDown);
 });
 
@@ -850,46 +832,6 @@ onUnmounted(() => {
       @move-to-folder="handleBatchMove"
       @open-health-check="openHealthSettings"
     />
-
-    <!-- Dismissible Pure Fullscreen Footer Tip Pill -->
-    <div
-      v-if="showFooterGuideTip && !isBatchMode"
-      class="fixed bottom-14 right-6 z-30 max-w-sm p-3.5 rounded-2xl bg-white/95 dark:bg-zinc-900/95 border border-indigo-500/30 shadow-xl backdrop-blur-md text-xs space-y-2 select-none animate-in fade-in slide-in-from-bottom-2 duration-200"
-    >
-      <div class="flex items-start justify-between gap-2">
-        <div class="flex items-center gap-1.5 font-bold text-slate-900 dark:text-zinc-100 text-xs">
-          <span>✨</span>
-          <span>想要关闭底部的 Chrome 页脚？</span>
-        </div>
-        <button
-          type="button"
-          @click="dismissFooterGuideTip"
-          class="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 p-0.5 rounded cursor-pointer"
-          title="不再提示"
-        >
-          <X class="w-3.5 h-3.5" />
-        </button>
-      </div>
-      <div class="text-[11px] text-slate-500 dark:text-zinc-400 leading-relaxed">
-        点击右下角 Chrome 原生自带的 <strong>「自定义 Chrome」</strong> (铅笔图标) → 在右侧栏关闭 <strong>【页脚】</strong> 开关，即可享受全屏极简视觉！
-      </div>
-      <div class="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-zinc-800">
-        <button
-          type="button"
-          @click="openGeneralSettings(); dismissFooterGuideTip()"
-          class="text-indigo-600 dark:text-indigo-400 hover:underline text-[11px] font-medium cursor-pointer"
-        >
-          查看详细说明
-        </button>
-        <button
-          type="button"
-          @click="dismissFooterGuideTip"
-          class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-medium cursor-pointer"
-        >
-          我知道了
-        </button>
-      </div>
-    </div>
 
     <!-- Settings Modal -->
     <SettingsModal

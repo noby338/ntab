@@ -274,8 +274,6 @@ export const ja: LocaleMessages = {
     columnWidthDesc: 'カードの幅を調整（コンパクト配置からワイド表示まで）',
     columnCount: '{count}列',
     columnCountSingle: '1列',
-    enterDemo: 'デモ展示モード',
-    exitDemo: 'デモ終了',
     columnGap: 'カラム間隔',
     columnGapDesc: 'カード列同士の左右の余白を調整',
     columnAlign: '画面水平揃え',

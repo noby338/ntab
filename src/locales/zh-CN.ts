@@ -274,8 +274,6 @@ export const zhCN: LocaleMessages = {
     columnWidthDesc: '调整卡片分列宽度 (支持紧凑多列或宽屏大列)',
     columnCount: '{count}列',
     columnCountSingle: '1列',
-    enterDemo: '宣传展示模式',
-    exitDemo: '退出展示模式',
     columnGap: '分列间距',
     columnGapDesc: '调整各列卡片之间的水平空隙',
     columnAlign: '页面水平对齐',

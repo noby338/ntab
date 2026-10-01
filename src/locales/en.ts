@@ -272,8 +272,6 @@ export const en = {
     columnWidthDesc: 'Adjust column card width (compact to ultra-wide)',
     columnCount: '{count} cols',
     columnCountSingle: '1 col',
-    enterDemo: 'Showcase Demo',
-    exitDemo: 'Exit Showcase',
     columnGap: 'Column Gap',
     columnGapDesc: 'Adjust horizontal space between column cards',
     columnAlign: 'Page Horizontal Alignment',

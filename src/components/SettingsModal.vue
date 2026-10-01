@@ -27,7 +27,6 @@ import {
   Play,
   Square,
   CheckCircle2,
-  Camera,
 } from '@lucide/vue';
 import {
   checkerState,
@@ -73,8 +72,6 @@ import {
   loadTopSites,
   loadRecentlyClosed,
   batchRemoveBookmarks,
-  isDemoMode,
-  toggleDemoMode,
 } from '../services/bookmarks';
 import { t, LANGUAGE_OPTIONS, activeLanguage } from '../locales';
 import {
@@ -1830,15 +1827,6 @@ function handleImport() {
         <div class="px-6 py-3 border-t border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 flex items-center justify-between text-xs text-slate-400">
           <div class="flex items-center gap-3">
             <span>NTab</span>
-            <button
-              type="button"
-              @click="toggleDemoMode(); emit('close')"
-              class="flex items-center gap-1 text-indigo-600 dark:text-indigo-400 hover:underline font-medium transition-colors cursor-pointer"
-              :title="isDemoMode ? 'Exit Demo Showcase' : 'Enter 100% Private Demo Showcase with Global Tech Bookmarks'"
-            >
-              <Camera class="w-3.5 h-3.5" />
-              <span>{{ isDemoMode ? (t('settings.exitDemo') || '退出展示模式') : (t('settings.enterDemo') || '📷 宣传展示模式') }}</span>
-            </button>
             <button
               type="button"
               @click="activeTab = 'donate'"

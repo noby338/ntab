@@ -274,8 +274,6 @@ export const es: LocaleMessages = {
     columnWidthDesc: 'Ajusta el ancho de las tarjetas (desde compacto hasta ultra ancho)',
     columnCount: '{count} col.',
     columnCountSingle: '1 col.',
-    enterDemo: 'Modo Showcase',
-    exitDemo: 'Salir del demo',
     columnGap: 'Espaciado entre columnas',
     columnGapDesc: 'Ajusta la separación horizontal entre las columnas',
     columnAlign: 'Alineación horizontal de página',

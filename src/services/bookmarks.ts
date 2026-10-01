@@ -12,25 +12,6 @@ export const isLoaded = ref(false);
 
 const isChrome = typeof chrome !== 'undefined' && !!chrome.bookmarks;
 
-export const isDemoMode = ref(
-  typeof window !== 'undefined' &&
-  (new URLSearchParams(window.location.search).has('demo') ||
-   window.localStorage.getItem('ntab_demo_mode') === 'true')
-);
-
-export function toggleDemoMode(enable?: boolean): void {
-  const next = enable !== undefined ? enable : !isDemoMode.value;
-  isDemoMode.value = next;
-  if (typeof window !== 'undefined') {
-    if (next) {
-      window.localStorage.setItem('ntab_demo_mode', 'true');
-    } else {
-      window.localStorage.removeItem('ntab_demo_mode');
-    }
-  }
-  loadBookmarks();
-}
-
 const GLOBAL_SHOWCASE_BOOKMARKS: BookmarkItem[] = [
   {
     id: '1',
@@ -111,7 +92,7 @@ function indexNodes(nodes: BookmarkItem[], fMap: Map<string, BookmarkItem>, allM
 
 // Fetch all bookmarks
 export async function loadBookmarks(): Promise<void> {
-  if (!isChrome || isDemoMode.value) {
+  if (!isChrome) {
     rawBookmarkTree.value = GLOBAL_SHOWCASE_BOOKMARKS;
     const newFMap = new Map<string, BookmarkItem>();
     const newAllMap = new Map<string, BookmarkItem>();

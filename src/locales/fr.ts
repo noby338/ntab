@@ -274,8 +274,6 @@ export const fr: LocaleMessages = {
     columnWidthDesc: 'Ajustez la largeur des cartes (du mode compact au format ultra-large)',
     columnCount: '{count} col.',
     columnCountSingle: '1 col.',
-    enterDemo: 'Mode vitrine',
-    exitDemo: 'Quitter la démo',
     columnGap: 'Espacement entre colonnes',
     columnGapDesc: 'Ajustez l’espace horizontal entre les colonnes de cartes',
     columnAlign: 'Alignement horizontal de la page',

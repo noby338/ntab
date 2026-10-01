@@ -1,6 +1,6 @@
 import { ref, watch, computed } from 'vue';
 import type { UserSettings, ColumnLayout, BookmarkItem, AdaptiveExportPayload, AdaptiveColumnEntry } from '../types';
-import { folderMap, getFolderPath, findFolderByPathOrTitle, isDemoMode } from './bookmarks';
+import { folderMap, getFolderPath, findFolderByPathOrTitle } from './bookmarks';
 
 export const DEFAULT_SETTINGS: UserSettings = {
   language: 'auto',
@@ -516,14 +516,6 @@ export function toggleFolderCollapse(folderId: string): void {
 export async function loadColumnLayout(
   availableRoots: BookmarkItem[]
 ): Promise<ColumnLayout> {
-  if (isDemoMode.value) {
-    const demoLayout: ColumnLayout = {
-      columns: [['101'], ['102'], ['103'], ['104']],
-    };
-    columnLayout.value = demoLayout;
-    return demoLayout;
-  }
-
   let savedColumns: string[][] | null = null;
 
   if (isChromeStorage && chrome.storage.sync) {

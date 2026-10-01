@@ -274,8 +274,6 @@ export const ru: LocaleMessages = {
     columnWidthDesc: 'Регулировка ширины карточек (от компактных до сверхшироких)',
     columnCount: '{count} кол.',
     columnCountSingle: '1 кол.',
-    enterDemo: 'Демо-режим',
-    exitDemo: 'Выйти из демо',
     columnGap: 'Расстояние между колонками',
     columnGapDesc: 'Горизонтальный зазор между колонками карточек',
     columnAlign: 'Горизонтальное выравнивание',

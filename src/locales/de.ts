@@ -274,8 +274,6 @@ export const de: LocaleMessages = {
     columnWidthDesc: 'Breite der Kartenspalten anpassen (von schmal bis extrabreit)',
     columnCount: '{count} Sp.',
     columnCountSingle: '1 Sp.',
-    enterDemo: 'Showcase-Modus',
-    exitDemo: 'Demo beenden',
     columnGap: 'Spaltenabstand',
     columnGapDesc: 'Horizontaler Abstand zwischen den Spalten',
     columnAlign: 'Horizontale Ausrichtung',

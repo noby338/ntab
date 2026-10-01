@@ -274,8 +274,6 @@ export const ko: LocaleMessages = {
     columnWidthDesc: '카드 너비 조절 (초소형 다열부터 와이드 대형 화면까지)',
     columnCount: '{count}열',
     columnCountSingle: '1열',
-    enterDemo: '쇼케이스 데모',
-    exitDemo: '데모 종료',
     columnGap: '열 간격',
     columnGapDesc: '카드 열 사이의 좌우 여백을 조절합니다',
     columnAlign: '화면 가로 정렬',

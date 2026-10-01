@@ -159,6 +159,34 @@
 </head>
 <body>
   <div class="hero">
+    <div style="display: flex; justify-content: center; margin-bottom: 20px;">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="64" height="64" style="border-radius: 16px; box-shadow: 0 8px 24px rgba(79, 70, 229, 0.4);">
+        <defs>
+          <linearGradient id="hero-bg-ntab" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#18181b" />
+            <stop offset="100%" stop-color="#000000" />
+          </linearGradient>
+          <linearGradient id="hero-left-ribbon" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#818cf8" />
+            <stop offset="100%" stop-color="#4f46e5" />
+          </linearGradient>
+          <linearGradient id="hero-right-ribbon" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#38bdf8" />
+            <stop offset="100%" stop-color="#0284c7" />
+          </linearGradient>
+          <linearGradient id="hero-diag-ribbon" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#4f46e5" />
+            <stop offset="100%" stop-color="#38bdf8" />
+          </linearGradient>
+        </defs>
+        <rect width="128" height="128" rx="28" fill="url(#hero-bg-ntab)" />
+        <rect width="126" height="126" x="1" y="1" rx="27" fill="none" stroke="#27272a" stroke-width="1.5" />
+        <polygon points="50,24 78,64 78,84 50,44" fill="url(#hero-diag-ribbon)" />
+        <path d="M 28 24 L 50 24 L 50 104 L 39 93 L 28 104 Z" fill="url(#hero-left-ribbon)" />
+        <path d="M 78 24 L 89 35 L 100 24 L 100 104 L 78 104 Z" fill="url(#hero-right-ribbon)" />
+      </svg>
+    </div>
+
     <div class="badge">✦ Open Source &amp; 100% Private</div>
     <h1>Turn your new tab into an immaculate canvas.</h1>
     <p class="subtitle">A hyper-efficient, responsive multi-column bookmark manager. Zero ads, zero tracking, instant search, and a 7-day safety trash bin.</p>
@@ -167,7 +195,7 @@
       <a href="https://github.com/noby338/ntab" class="btn btn-primary" target="_blank" rel="noopener">
         <span>GitHub Repository</span>
       </a>
-      <a href="privacy.html" class="btn btn-secondary">
+      <a href="/privacy" class="btn btn-secondary">
         <span>Privacy Policy</span>
       </a>
     </div>
@@ -193,11 +221,10 @@
   </div>
 
   <footer>
-    <p>NTab · Open Source under the MIT License</p>
+    <p>NTab © 2026 · Open Source under the MIT License</p>
     <p style="margin-top: 8px;">
       <a href="https://github.com/noby338/ntab" target="_blank" rel="noopener">GitHub</a> · 
-      <a href="privacy.html">Privacy Policy</a> · 
-      <a href="store-assets/STORE_SUBMISSION_GUIDE.md">Submission Guide</a>
+      <a href="/privacy">Privacy Policy</a>
     </p>
   </footer>
 </body>

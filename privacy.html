@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Privacy Policy - NTab</title>
+  <meta name="description" content="NTab Privacy Policy - 100% offline-first, zero tracking, zero personal data collection.">
+  <link rel="icon" type="image/svg+xml" href="public/wxt.svg">
   <style>
     :root {
       --bg: #09090b;
@@ -32,30 +34,43 @@
       padding: 40px 20px;
     }
     .container {
-      max-width: 780px;
+      max-width: 800px;
       margin: 0 auto;
     }
     .header {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 16px;
       margin-bottom: 30px;
       padding-bottom: 20px;
       border-bottom: 1px solid var(--border);
     }
-    .logo {
-      width: 44px;
-      height: 44px;
+    .logo-svg {
+      width: 46px;
+      height: 46px;
+      flex-shrink: 0;
       border-radius: 12px;
-      background: linear-gradient(135deg, #4f46e5, #38bdf8);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 24px;
-      font-weight: 800;
-      color: #fff;
+      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
     }
-    h1 { font-size: 26px; font-weight: 800; }
+    .header-text {
+      flex: 1;
+    }
+    .back-home {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+      text-decoration: none;
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.04);
+      transition: all 0.15s ease;
+    }
+    .back-home:hover {
+      background: rgba(255, 255, 255, 0.08);
+      text-decoration: none;
+    }
+    h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
     h2 { font-size: 19px; font-weight: 700; margin-top: 36px; margin-bottom: 14px; color: var(--accent); }
     p, li { font-size: 14.5px; color: var(--text-muted); margin-bottom: 12px; }
     ul { padding-left: 24px; margin-bottom: 16px; }
@@ -90,7 +105,11 @@
       border-top: 1px solid var(--border);
       font-size: 13px;
       color: var(--text-muted);
-      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
     }
     a { color: var(--accent); text-decoration: none; }
     a:hover { text-decoration: underline; }
@@ -99,16 +118,44 @@
 <body>
   <div class="container">
     <div class="header">
-      <div class="logo">N</div>
-      <div>
+      <!-- Official Vector NTab Logo -->
+      <svg class="logo-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="46" height="46">
+        <defs>
+          <linearGradient id="bg-ntab" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#18181b" />
+            <stop offset="100%" stop-color="#000000" />
+          </linearGradient>
+          <linearGradient id="left-ribbon" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#818cf8" />
+            <stop offset="100%" stop-color="#4f46e5" />
+          </linearGradient>
+          <linearGradient id="right-ribbon" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#38bdf8" />
+            <stop offset="100%" stop-color="#0284c7" />
+          </linearGradient>
+          <linearGradient id="diag-ribbon" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#4f46e5" />
+            <stop offset="100%" stop-color="#38bdf8" />
+          </linearGradient>
+        </defs>
+        <rect width="128" height="128" rx="28" fill="url(#bg-ntab)" />
+        <rect width="126" height="126" x="1" y="1" rx="27" fill="none" stroke="#27272a" stroke-width="1.5" />
+        <polygon points="50,24 78,64 78,84 50,44" fill="url(#diag-ribbon)" />
+        <path d="M 28 24 L 50 24 L 50 104 L 39 93 L 28 104 Z" fill="url(#left-ribbon)" />
+        <path d="M 78 24 L 89 35 L 100 24 L 100 104 L 78 104 Z" fill="url(#right-ribbon)" />
+      </svg>
+
+      <div class="header-text">
         <h1>NTab Privacy Policy</h1>
-        <p style="margin:0; font-size: 12px;">Last updated: March 2025 · 100% Zero-Telemetry Architecture</p>
+        <p style="margin:0; font-size: 12px;">Last updated: October 2026 · 100% Zero-Telemetry Architecture</p>
       </div>
+
+      <a href="/" class="back-home">← Back to Home</a>
     </div>
 
     <p><strong>NTab</strong> is an open-source, minimalist new tab browser extension with smart multi-column bookmark management. We believe privacy is a fundamental human right. NTab is built with an offline-first architecture with zero tracking.</p>
 
-    <h2>1. Zero Data Collection & Tracking</h2>
+    <h2>1. Zero Data Collection &amp; Tracking</h2>
     <ul>
       <li><strong>No Personal Data Collected:</strong> We do not collect, track, store, or sell any personal data, search queries, browsing habits, IP addresses, or device identifiers.</li>
       <li><strong>No Analytics SDKs:</strong> NTab contains zero tracking SDKs, zero analytics trackers (no Google Analytics, Mixpanel, etc.), and zero third-party advertising scripts.</li>
@@ -127,7 +174,7 @@
       <tbody>
         <tr>
           <td><span class="badge">bookmarks</span></td>
-          <td>Reads and organizes bookmarks into multi-column cards; performs user-initiated add/move/delete actions.</td>
+          <td>Reads and organizes bookmarks into multi-column cards; performs user-initiated add, move, rename, and delete actions.</td>
           <td><strong>100% Local</strong>. Never leaves your computer.</td>
         </tr>
         <tr>
@@ -146,13 +193,23 @@
           <td>Local only via browser API.</td>
         </tr>
         <tr>
+          <td><span class="badge">history</span></td>
+          <td>Used locally as a fallback to populate recently closed sites if session history is cleared. Never recorded or transmitted.</td>
+          <td>Local only via browser API.</td>
+        </tr>
+        <tr>
+          <td><span class="badge">favicon</span></td>
+          <td>Fetches website favicons to display alongside bookmarks via Chrome's internal favicon provider.</td>
+          <td>Handled internally by Chrome.</td>
+        </tr>
+        <tr>
           <td><span class="badge">identity</span></td>
           <td><em>(Optional)</em> Used strictly when you click "Sign in with Google" to backup settings to your own private Google Drive appDataFolder.</td>
           <td>Direct connection to official Google APIs. No intermediate server exists.</td>
         </tr>
         <tr>
           <td><span class="badge">host_permissions (*://*/*)</span></td>
-          <td>Used exclusively for client-side Bookmark Health Checker. Sends lightweight HEAD requests to detect 404/403 dead links.</td>
+          <td>Used exclusively for the client-side Bookmark Health Checker. Sends lightweight HEAD requests to detect 404/403 dead links.</td>
           <td>Direct peer-to-target request. Zero tracking or logs.</td>
         </tr>
       </tbody>
@@ -166,7 +223,8 @@
     <p><a href="https://github.com/noby338/ntab" target="_blank" rel="noopener">https://github.com/noby338/ntab</a></p>
 
     <div class="footer">
-      NTab © 2025 · Designed for focus, speed, and privacy.
+      <span>NTab © 2026 · Designed for focus, speed, and privacy.</span>
+      <span><a href="https://github.com/noby338/ntab" target="_blank" rel="noopener">GitHub</a> · <a href="/">Home</a></span>
     </div>
   </div>
 </body>

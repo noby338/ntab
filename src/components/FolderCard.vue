@@ -363,11 +363,11 @@ async function handleFolderDrop(event: DragEvent) {
     v-if="folderData"
     :data-card-id="folderId"
     :data-row-index="rowIndex"
-    class="relative group/folder backdrop-blur-xl border rounded-2xl shadow-sm transition-[background-color,border-color,opacity,box-shadow] duration-150"
+    class="relative group/folder backdrop-blur-xl border rounded-2xl shadow-sm transition-[background-color,border-color,opacity,box-shadow] duration-150 flex-shrink-0"
     style="background-color: var(--card-bg); border-color: var(--card-border);"
     :class="[
       isDraggingFolder ? 'opacity-40 scale-98' : '',
-      isMenuOpen ? 'z-40' : 'z-1'
+      isMenuOpen ? 'z-40' : 'z-0'
     ]"
     @dragover="handleFolderDragOver"
     @dragleave="handleFolderDragLeave"
@@ -376,10 +376,10 @@ async function handleFolderDrop(event: DragEvent) {
     <!-- Horizontal Card Slot Indicator: Above this card -->
     <div
       v-if="activeDropTarget?.type === 'card_slot' && activeDropTarget.colIndex === colIndex && activeDropTarget.slotIndex === rowIndex"
-      class="absolute -top-1.5 left-0 right-0 h-1 bg-indigo-500 rounded-full z-30 shadow-md pointer-events-none transition-all duration-100"
+      class="absolute -top-2 left-2 right-2 h-1.5 bg-indigo-500 rounded-full z-40 shadow-lg shadow-indigo-500/40 pointer-events-none transition-all duration-100 animate-in fade-in"
     >
-      <div class="absolute -top-1 -left-1 w-3 h-3 rounded-full bg-indigo-600 ring-2 ring-white dark:ring-zinc-900 shadow-xs"></div>
-      <div class="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-indigo-600 ring-2 ring-white dark:ring-zinc-900 shadow-xs"></div>
+      <div class="absolute -top-1 -left-1 w-3.5 h-3.5 rounded-full bg-indigo-600 ring-2 ring-white dark:ring-zinc-900 shadow-md"></div>
+      <div class="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-indigo-600 ring-2 ring-white dark:ring-zinc-900 shadow-md"></div>
     </div>
 
     <!-- Folder Nesting Highlight -->
@@ -533,9 +533,9 @@ async function handleFolderDrop(event: DragEvent) {
             v-if="isDeletable"
             type="button"
             @click="startRenameFolder"
-            class="w-full flex items-center gap-2 px-2.5 py-2 rounded-xl theme-popover-item transition-colors text-left cursor-pointer text-indigo-600 dark:text-indigo-400 font-medium"
+            class="w-full flex items-center gap-2 px-2.5 py-2 rounded-xl theme-popover-item transition-colors text-left cursor-pointer"
           >
-            <Edit3 class="w-3.5 h-3.5" />
+            <Edit3 class="w-3.5 h-3.5 text-slate-400" />
             <span>{{ t('card.renameFolder') || '重命名文件夹' }}</span>
           </button>
 

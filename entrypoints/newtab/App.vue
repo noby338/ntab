@@ -809,7 +809,7 @@ onUnmounted(() => {
     <section
       v-if="userSettings.showSearch"
       class="sticky top-2 z-40 pointer-events-none transition-all duration-200"
-      :class="userSettings.compactHeader ? 'px-6 pt-1 mb-6' : 'px-6 pt-1 mb-4'"
+      :class="userSettings.compactHeader ? 'px-6 pt-0 mb-2' : 'px-6 pt-1 mb-3'"
     >
       <div class="pointer-events-auto">
         <SearchBar />
@@ -818,14 +818,14 @@ onUnmounted(() => {
 
     <!-- Main Bookmark Columns Area -->
     <main
-      class="flex-1 overflow-x-auto min-h-screen"
-      :class="userSettings.compactHeader ? (userSettings.showSearch ? 'px-4 pt-2 pb-8' : 'px-4 pt-4 pb-8') : 'px-8 pb-10'"
+      class="flex-1 overflow-x-auto min-h-0"
+      :class="userSettings.compactHeader ? (userSettings.showSearch ? 'px-4 pt-0 pb-2' : 'px-4 pt-2 pb-2') : 'px-8 pt-1 pb-4'"
       @dragover="handleMainDragOver"
       @drop="handleMainDrop"
     >
       <div
         v-if="isLoaded"
-        class="flex items-start transition-all relative min-h-[calc(100vh-180px)]"
+        class="flex items-start transition-all relative"
         :class="{
           'justify-start': userSettings.columnAlign === 'left',
           'justify-center': userSettings.columnAlign === 'center',

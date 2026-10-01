@@ -120,12 +120,12 @@ export function resolveDropTarget(
   const cardRects = cardEls.map((el) => el.getBoundingClientRect());
 
   const lastCard = cardRects[M - 1];
-  if (lastCard && clientY > lastCard.bottom) {
+  if (lastCard && clientY > lastCard.bottom && clientY <= lastCard.bottom + 80) {
     return { type: 'card_slot', colIndex: activeColIdx, slotIndex: M };
   }
 
   const firstCard = cardRects[0];
-  if (firstCard && clientY < firstCard.top) {
+  if (firstCard && clientY < firstCard.top && clientY >= firstCard.top - 80) {
     return { type: 'card_slot', colIndex: activeColIdx, slotIndex: 0 };
   }
 

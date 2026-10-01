@@ -35,7 +35,7 @@ const emit = defineEmits<{
 <template>
   <div
     :data-column-index="colIndex"
-    class="relative flex flex-col transition-[width] duration-150 min-h-[calc(100vh-220px)]"
+    class="relative flex flex-col pt-2 transition-[width] duration-150 min-h-0"
     :style="{
       width: `${userSettings.columnWidth}px`,
       flex: `0 0 ${userSettings.columnWidth}px`,
@@ -79,7 +79,7 @@ const emit = defineEmits<{
     <!-- Bottom Drop Slot (Append to this column) -->
     <div
       v-if="activeDropTarget?.type === 'card_slot' && activeDropTarget.colIndex === colIndex && activeDropTarget.slotIndex === folderIds.length"
-      class="h-12 border-2 border-dashed border-indigo-500 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-xs font-semibold text-indigo-600 dark:text-indigo-400 select-none animate-in fade-in duration-100 flex-shrink-0"
+      class="h-8 border border-dashed border-indigo-500/70 rounded-xl bg-indigo-500/10 flex items-center justify-center text-xs font-semibold text-indigo-600 dark:text-indigo-400 select-none animate-in fade-in duration-100 flex-shrink-0"
     >
       {{ t('card.dropToEnd') || '放置在此列末尾' }}
     </div>

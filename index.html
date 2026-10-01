@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NTab - Minimalist New Tab &amp; Multi-Column Bookmark Manager</title>
+  <meta name="description" content="Modern, fast and minimalist new tab page with customizable multi-column bookmarks, 7-day safety trash bin, and dead link checker. 100% offline &amp; private.">
+  <link rel="icon" type="image/svg+xml" href="public/wxt.svg">
+  <style>
+    :root {
+      --bg: #09090b;
+      --card-bg: rgba(24, 24, 27, 0.7);
+      --border: rgba(255, 255, 255, 0.1);
+      --text: #f4f4f5;
+      --text-muted: #a1a1aa;
+      --accent: #6366f1;
+      --accent-glow: rgba(99, 102, 241, 0.25);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+    .hero {
+      flex: 1;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 80px 24px 60px;
+      text-align: center;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: #818cf8;
+      margin-bottom: 24px;
+    }
+    h1 {
+      font-size: clamp(36px, 6vw, 64px);
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      line-height: 1.1;
+      margin-bottom: 20px;
+      background: linear-gradient(180deg, #ffffff 40%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    p.subtitle {
+      font-size: clamp(16px, 2vw, 20px);
+      color: var(--text-muted);
+      max-width: 640px;
+      margin: 0 auto 36px;
+    }
+    .cta-group {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 50px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 14px;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .btn-primary {
+      background: #4f46e5;
+      color: #ffffff;
+      box-shadow: 0 4px 20px var(--accent-glow);
+    }
+    .btn-primary:hover {
+      background: #4338ca;
+      transform: translateY(-1px);
+    }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateY(-1px);
+    }
+    .preview-card {
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+      background: var(--card-bg);
+      margin-top: 20px;
+    }
+    .preview-card img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+      max-width: 1000px;
+      margin: 60px auto;
+      padding: 0 24px;
+    }
+    .feature {
+      padding: 24px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      text-align: left;
+    }
+    .feature h3 {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #ffffff;
+    }
+    .feature p {
+      font-size: 13.5px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 30px 24px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    footer a {
+      color: #818cf8;
+      text-decoration: none;
+      margin: 0 8px;
+    }
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <div class="badge">✦ Open Source &amp; 100% Private</div>
+    <h1>Turn your new tab into an immaculate canvas.</h1>
+    <p class="subtitle">A hyper-efficient, responsive multi-column bookmark manager. Zero ads, zero tracking, instant search, and a 7-day safety trash bin.</p>
+    
+    <div class="cta-group">
+      <a href="https://github.com/noby338/ntab" class="btn btn-primary" target="_blank" rel="noopener">
+        <span>GitHub Repository</span>
+      </a>
+      <a href="privacy.html" class="btn btn-secondary">
+        <span>Privacy Policy</span>
+      </a>
+    </div>
+
+    <div class="preview-card">
+      <img src="store-assets/screenshot-1-1280x800.png" alt="NTab Showcase Preview">
+    </div>
+  </div>
+
+  <div class="features">
+    <div class="feature">
+      <h3>📐 Responsive Percentage Columns</h3>
+      <p>Adapts fluidly from ultra-wide monitors down to 50% split-screen mode with zero clipped cards.</p>
+    </div>
+    <div class="feature">
+      <h3>🗑️ 7-Day Safety Trash Bin</h3>
+      <p>Accidentally deleted a bookmark? Restore any bookmark or folder with one click from local trash.</p>
+    </div>
+    <div class="feature">
+      <h3>🩺 Dead Link Health Checker</h3>
+      <p>Lightweight client-side probe detects 404 broken pages and 403 barriers to keep your bookmarks clean.</p>
+    </div>
+  </div>
+
+  <footer>
+    <p>NTab · Open Source under the MIT License</p>
+    <p style="margin-top: 8px;">
+      <a href="https://github.com/noby338/ntab" target="_blank" rel="noopener">GitHub</a> · 
+      <a href="privacy.html">Privacy Policy</a> · 
+      <a href="store-assets/STORE_SUBMISSION_GUIDE.md">Submission Guide</a>
+    </p>
+  </footer>
+</body>
+</html>

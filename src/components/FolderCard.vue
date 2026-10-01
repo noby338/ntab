@@ -80,13 +80,14 @@ const CHROME_APPS_LIST: BookmarkItem[] = [
 
 function formatRelativeTime(timestamp: number): string {
   const diff = Math.max(0, Date.now() - timestamp);
-  const minutes = Math.floor(diff / (60 * 1000));
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+
   if (minutes < 1) return t('common.justNow') || '刚刚';
-  if (minutes < 60) return `${minutes}分钟前`;
-  const hours = Math.floor(minutes / (60 * 60 * 1000));
-  if (hours < 24) return `${hours}小时前`;
-  const days = Math.floor(hours / (24 * 60 * 60 * 1000));
-  return `${days}天前`;
+  if (minutes < 60) return (t('common.minutesAgo') || '{m}分钟前').replace('{m}', String(minutes));
+  if (hours < 24) return (t('common.hoursAgo') || '{h}小时前').replace('{h}', String(hours));
+  return (t('common.daysAgo') || '{d}天前').replace('{d}', String(days));
 }
 
 function getHostname(url?: string): string {
@@ -131,11 +132,20 @@ function cancelRenameFolder() {
   renameTitle.value = '';
 }
 
+const isMenuNearBottom = ref(false);
+
 function toggleMenu(event: MouseEvent) {
   event.stopPropagation();
   if (activeFolderMenuId.value === props.folderId) {
     activeFolderMenuId.value = null;
   } else {
+    const triggerEl = event.currentTarget as HTMLElement | null;
+    if (triggerEl && typeof window !== 'undefined') {
+      const rect = triggerEl.getBoundingClientRect();
+      isMenuNearBottom.value = (window.innerHeight - rect.bottom) < 230;
+    } else {
+      isMenuNearBottom.value = false;
+    }
     activeFolderMenuId.value = props.folderId;
   }
 }
@@ -470,7 +480,7 @@ async function handleFolderDrop(event: DragEvent) {
       </div>
 
       <span
-        v-if="cardTypeMeta.badge"
+        v-if="!isRenaming && cardTypeMeta.badge"
         class="text-[10px] font-medium px-1.5 py-0.5 rounded-md border flex-shrink-0 select-none leading-none"
         :class="cardTypeMeta.badgeClass"
       >
@@ -478,7 +488,7 @@ async function handleFolderDrop(event: DragEvent) {
       </span>
 
       <span
-        v-if="folderId === 'recently_deleted' || folderData.children"
+        v-if="!isRenaming && (folderId === 'recently_deleted' || folderData.children)"
         class="font-mono font-semibold rounded-full bg-slate-200/80 dark:bg-white/10 text-slate-800 dark:text-zinc-200 leading-none flex items-center justify-center flex-shrink-0"
         :style="{
           fontSize: 'clamp(9px, calc(var(--bookmark-font-size, 14px) * 0.78), 12px)',
@@ -491,6 +501,7 @@ async function handleFolderDrop(event: DragEvent) {
       </span>
 
       <button
+        v-if="!isRenaming"
         type="button"
         @click="toggleFolderCollapse(folderId)"
         class="p-1 rounded text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 cursor-pointer"
@@ -515,7 +526,8 @@ async function handleFolderDrop(event: DragEvent) {
         <!-- Dropdown Menu -->
         <div
           v-if="isMenuOpen"
-          class="absolute right-0 top-full mt-1.5 w-52 theme-popover backdrop-blur-xl rounded-2xl p-1.5 z-50 text-xs select-none animate-in fade-in zoom-in-95 duration-100"
+          class="absolute right-0 w-52 theme-popover backdrop-blur-xl rounded-2xl p-1.5 z-50 text-xs select-none animate-in fade-in zoom-in-95 duration-100"
+          :class="isMenuNearBottom ? 'bottom-full mb-1.5' : 'top-full mt-1.5'"
           @click.stop
         >
           <button

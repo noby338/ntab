@@ -679,7 +679,7 @@ onUnmounted(() => {
       <!-- Absolutely Centered Clock (Strict Optical & Geometric Center of Viewport) -->
       <div
         v-if="userSettings.showClock"
-        class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center pointer-events-none select-none z-10"
+        class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden xl:flex flex-col items-center justify-center pointer-events-none select-none z-10"
       >
         <span class="font-extralight tracking-tight font-mono text-slate-900 dark:text-white drop-shadow-xs leading-none text-2xl md:text-3xl">
           {{ currentTime }}
@@ -731,7 +731,7 @@ onUnmounted(() => {
           type="button"
           @click="openDonateSettings"
           :title="t('settings.tabDonate') || '赞赏支持'"
-          class="rounded-xl border border-slate-200/90 dark:border-white/10 bg-white/80 dark:bg-white/5 hover:bg-white dark:hover:bg-white/15 text-slate-800 dark:text-zinc-200 shadow-2xs transition-colors cursor-pointer flex items-center justify-center p-2 flex-shrink-0"
+          class="rounded-xl border border-slate-200/90 dark:border-white/10 bg-white/80 dark:bg-white/5 hover:bg-white dark:hover:bg-white/15 text-slate-800 dark:text-zinc-200 shadow-2xs transition-colors cursor-pointer hidden sm:flex items-center justify-center p-2 flex-shrink-0"
         >
           <Heart class="w-3.5 h-3.5 text-slate-800 dark:text-white" />
         </button>
@@ -742,7 +742,7 @@ onUnmounted(() => {
           target="_blank"
           rel="noopener noreferrer"
           title="GitHub - noby338/ntab"
-          class="rounded-xl border border-slate-200/90 dark:border-white/10 bg-white/80 dark:bg-white/5 hover:bg-white dark:hover:bg-white/15 text-slate-800 dark:text-zinc-200 shadow-2xs transition-colors cursor-pointer flex items-center justify-center p-2"
+          class="rounded-xl border border-slate-200/90 dark:border-white/10 bg-white/80 dark:bg-white/5 hover:bg-white dark:hover:bg-white/15 text-slate-800 dark:text-zinc-200 shadow-2xs transition-colors cursor-pointer hidden sm:flex items-center justify-center p-2"
         >
           <SearchEngineIcon engine-id="github" size-class="w-3.5 h-3.5" />
         </a>
@@ -825,7 +825,7 @@ onUnmounted(() => {
     >
       <div
         v-if="isLoaded"
-        class="flex items-start transition-all relative"
+        class="min-w-full w-max flex items-start transition-all relative"
         :class="{
           'justify-start': userSettings.columnAlign === 'left',
           'justify-center': userSettings.columnAlign === 'center',

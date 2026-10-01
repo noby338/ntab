@@ -10,7 +10,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   rowHeight: 32,
   hoverDuration: 75,
   columnGap: 20,
-  columnWidth: 270,
+  columnWidth: 25,
   columnAlign: 'center',
   cardRadius: 16,
   backdropBlur: 16,
@@ -357,7 +357,11 @@ export async function loadSettings(): Promise<UserSettings> {
     try {
       const data = await chrome.storage.sync.get(['ntab_settings', 'ntab_collapsed']);
       if (data.ntab_settings) {
-        userSettings.value = { ...DEFAULT_SETTINGS, ...data.ntab_settings };
+        const merged = { ...DEFAULT_SETTINGS, ...data.ntab_settings };
+        if (typeof merged.columnWidth === 'number' && merged.columnWidth > 100) {
+          merged.columnWidth = 25;
+        }
+        userSettings.value = merged;
       }
       if (data.ntab_collapsed && Array.isArray(data.ntab_collapsed)) {
         collapsedFolders.value = new Set(data.ntab_collapsed);
@@ -370,7 +374,12 @@ export async function loadSettings(): Promise<UserSettings> {
     const local = localStorage.getItem('ntab_settings');
     if (local) {
       try {
-        userSettings.value = { ...DEFAULT_SETTINGS, ...JSON.parse(local) };
+        const parsed = JSON.parse(local);
+        const merged = { ...DEFAULT_SETTINGS, ...parsed };
+        if (typeof merged.columnWidth === 'number' && merged.columnWidth > 100) {
+          merged.columnWidth = 25;
+        }
+        userSettings.value = merged;
       } catch {}
     }
     const collapsed = localStorage.getItem('ntab_collapsed');
@@ -415,7 +424,7 @@ export function applySettingsToDOM(settings: UserSettings): void {
   root.style.setProperty('--bookmark-font-size', `${settings.fontSize}px`);
   root.style.setProperty('--bookmark-row-height', `${settings.rowHeight}px`);
   root.style.setProperty('--hover-duration', `${settings.hoverDuration}ms`);
-  root.style.setProperty('--column-width', `${settings.columnWidth}px`);
+  root.style.setProperty('--column-width', `${settings.columnWidth}%`);
   root.style.setProperty('--column-gap', `${settings.columnGap}px`);
 
   if (settings.cardRadius !== undefined) {

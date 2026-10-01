@@ -769,15 +769,15 @@ function handleImport() {
               <div class="bg-white/80 dark:bg-zinc-900/80 p-2.5 rounded-xl border border-slate-200/60 dark:border-zinc-800 text-[11px] space-y-1.5 text-slate-700 dark:text-zinc-300">
                 <div class="flex items-center gap-2">
                   <span class="w-4 h-4 rounded-full bg-indigo-500 text-white font-mono font-bold text-[9px] flex items-center justify-center flex-shrink-0">1</span>
-                  <span>点击屏幕右下角已有的 <strong>「自定义 Chrome」</strong> (铅笔图标)</span>
+                  <span>{{ t('settings.chromeFooterStep1') || '点击屏幕右下角已有的「自定义 Chrome」 (铅笔图标)' }}</span>
                 </div>
                 <div class="flex items-center gap-2">
                   <span class="w-4 h-4 rounded-full bg-indigo-500 text-white font-mono font-bold text-[9px] flex items-center justify-center flex-shrink-0">2</span>
-                  <span>在浏览器右侧滑出的面板中，找到 <strong>【页脚】</strong> 栏目</span>
+                  <span>{{ t('settings.chromeFooterStep2') || '在浏览器右侧滑出的面板中，找到【页脚】栏目' }}</span>
                 </div>
                 <div class="flex items-center gap-2">
                   <span class="w-4 h-4 rounded-full bg-indigo-500 text-white font-mono font-bold text-[9px] flex items-center justify-center flex-shrink-0">3</span>
-                  <span>关闭 <strong>「在“新标签页”页面上显示页脚」</strong> 开关，即可享受 100% 极简沉浸视觉！</span>
+                  <span>{{ t('settings.chromeFooterStep3') || '关闭「在“新标签页”页面上显示页脚」开关，即可享受 100% 极简沉浸视觉！' }}</span>
                 </div>
               </div>
             </div>
@@ -840,19 +840,19 @@ function handleImport() {
                   <input
                     v-model="newEngineName"
                     type="text"
-                    placeholder="引擎名称 (如: Perplexity)"
+                    :placeholder="t('search.engineNamePlaceholder') || '引擎名称 (如: Perplexity)'"
                     class="col-span-1 px-2.5 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                   <input
                     v-model="newEngineUrl"
                     type="text"
-                    placeholder="搜索 URL (使用 %s 代指关键词)"
+                    :placeholder="t('search.engineUrlPlaceholder') || '搜索 URL (使用 %s 代指关键词)'"
                     class="col-span-2 px-2.5 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
                   />
                 </div>
 
                 <div class="flex items-center justify-between pt-1">
-                  <span class="text-[10px] text-slate-400 font-mono">例如: https://www.perplexity.ai/search?q=%s</span>
+                  <span class="text-[10px] text-slate-400 font-mono">{{ t('search.engineExample') || '例如: https://www.perplexity.ai/search?q=%s' }}</span>
                   <button
                     type="button"
                     @click="handleAddCustomEngine"
@@ -977,13 +977,37 @@ function handleImport() {
                   <span class="font-medium text-slate-700 dark:text-zinc-300">{{ t('settings.columnWidth') }}</span>
                   <div class="text-[11px] text-slate-400">{{ t('settings.columnWidthDesc') }}</div>
                 </div>
-                <span class="text-xs text-slate-500 font-mono">{{ userSettings.columnWidth }}px</span>
+                <span class="text-xs text-indigo-600 dark:text-indigo-400 font-mono font-bold">{{ userSettings.columnWidth }}%</span>
               </div>
+
+              <!-- Quick Presets -->
+              <div class="grid grid-cols-5 gap-1.5 text-xs">
+                <button
+                  v-for="preset in [
+                    { label: '100%', sub: '1列', val: 100 },
+                    { label: '50%', sub: '2列', val: 50 },
+                    { label: '33%', sub: '3列', val: 33 },
+                    { label: '25%', sub: '4列', val: 25 },
+                    { label: '20%', sub: '5列', val: 20 },
+                  ]"
+                  :key="preset.val"
+                  type="button"
+                  @click="saveSettings({ columnWidth: preset.val })"
+                  class="py-1 px-1 rounded-xl border text-center transition-colors cursor-pointer flex flex-col items-center justify-center"
+                  :class="userSettings.columnWidth === preset.val
+                    ? 'bg-indigo-500/10 border-indigo-500 text-indigo-600 dark:text-indigo-400 font-semibold shadow-2xs'
+                    : 'border-slate-200/80 dark:border-white/10 text-slate-600 dark:text-zinc-400 hover:bg-black/5 dark:hover:bg-white/5'"
+                >
+                  <span class="font-mono text-xs">{{ preset.label }}</span>
+                  <span class="text-[9px] opacity-70 leading-none mt-0.5">{{ preset.sub }}</span>
+                </button>
+              </div>
+
               <input
                 type="range"
-                min="120"
-                max="600"
-                step="5"
+                min="15"
+                max="100"
+                step="1"
                 :value="userSettings.columnWidth"
                 @input="saveSettings({ columnWidth: Number(($event.target as HTMLInputElement).value) })"
                 class="w-full accent-indigo-600 cursor-pointer"
@@ -1482,7 +1506,7 @@ function handleImport() {
                   class="px-3.5 py-1 rounded-xl bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white font-medium text-xs transition-colors cursor-pointer flex items-center gap-1"
                 >
                   <Trash2 class="w-3 h-3" />
-                  <span>{{ isHealthDeleting ? (t('common.deleting') || '删除中...') : `删除选中的 ${healthSelectedDeleteIds.size} 项` }}</span>
+                  <span>{{ isHealthDeleting ? (t('common.deleting') || '删除中...') : (t('healthCheck.deleteSelectedCount') || '删除选中的 {count} 项').replace('{count}', String(healthSelectedDeleteIds.size)) }}</span>
                 </button>
               </div>
             </div>

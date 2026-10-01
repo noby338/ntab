@@ -307,7 +307,7 @@ onUnmounted(() => {
           >
             <div class="px-2.5 py-1 text-[10px] font-semibold text-slate-400 dark:text-zinc-500 flex items-center justify-between">
               <span>{{ t('search.engineMenuTitle') || '切换搜索引擎 / AI' }}</span>
-              <span class="font-mono text-[9px] opacity-75">按 1~9 快捷选择</span>
+              <span class="font-mono text-[9px] opacity-75">{{ t('search.quickHotkeyHint') || '按 1~9 快捷选择' }}</span>
             </div>
 
             <div class="max-h-72 overflow-y-auto space-y-0.5 mt-0.5">

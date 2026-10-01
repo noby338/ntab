@@ -393,7 +393,7 @@ function handleDelete(event: MouseEvent) {
       </span>
 
       <span
-        v-if="!isFolder && domain && !shouldOmitLogo"
+        v-if="!isFolder && domain && !shouldOmitLogo && userSettings.columnWidth >= 22"
         class="hidden group-hover:inline-block text-[11px] text-slate-400 dark:text-zinc-500 font-mono truncate max-w-[110px] flex-shrink-0 opacity-80 leading-none"
       >
         {{ domain }}

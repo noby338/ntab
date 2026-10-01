@@ -818,7 +818,8 @@ onUnmounted(() => {
 
     <!-- Main Bookmark Columns Area -->
     <main
-      class="flex-1 overflow-x-auto min-h-0"
+      class="flex-1 overflow-x-auto min-h-0 @container"
+      style="container-type: inline-size;"
       :class="userSettings.compactHeader ? (userSettings.showSearch ? 'px-4 pt-0 pb-2' : 'px-4 pt-2 pb-2') : 'px-8 pt-1 pb-4'"
       @dragover="handleMainDragOver"
       @drop="handleMainDrop"

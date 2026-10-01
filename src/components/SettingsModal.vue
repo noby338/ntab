@@ -980,21 +980,25 @@ function handleImport() {
                 <span class="text-xs text-indigo-600 dark:text-indigo-400 font-mono font-bold">{{ userSettings.columnWidth }}%</span>
               </div>
 
-              <!-- Quick Presets -->
-              <div class="grid grid-cols-5 gap-1.5 text-xs">
+              <!-- Quick Presets: Ordered from small percentage (more columns) to large percentage (fewer columns) -->
+              <div class="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-9 gap-1.5 text-xs">
                 <button
                   v-for="preset in [
-                    { label: '100%', sub: '1列', val: 100 },
-                    { label: '50%', sub: '2列', val: 50 },
-                    { label: '33%', sub: '3列', val: 33 },
-                    { label: '25%', sub: '4列', val: 25 },
+                    { label: '10%', sub: '10列', val: 10 },
+                    { label: '12.5%', sub: '8列', val: 12.5 },
+                    { label: '14%', sub: '7列', val: 14 },
+                    { label: '16.6%', sub: '6列', val: 16.6 },
                     { label: '20%', sub: '5列', val: 20 },
+                    { label: '25%', sub: '4列', val: 25 },
+                    { label: '33.3%', sub: '3列', val: 33.3 },
+                    { label: '50%', sub: '2列', val: 50 },
+                    { label: '100%', sub: '1列', val: 100 },
                   ]"
                   :key="preset.val"
                   type="button"
                   @click="saveSettings({ columnWidth: preset.val })"
                   class="py-1 px-1 rounded-xl border text-center transition-colors cursor-pointer flex flex-col items-center justify-center"
-                  :class="userSettings.columnWidth === preset.val
+                  :class="Math.abs(userSettings.columnWidth - preset.val) < 0.8
                     ? 'bg-indigo-500/10 border-indigo-500 text-indigo-600 dark:text-indigo-400 font-semibold shadow-2xs'
                     : 'border-slate-200/80 dark:border-white/10 text-slate-600 dark:text-zinc-400 hover:bg-black/5 dark:hover:bg-white/5'"
                 >
@@ -1005,9 +1009,9 @@ function handleImport() {
 
               <input
                 type="range"
-                min="15"
+                min="8"
                 max="100"
-                step="1"
+                step="0.5"
                 :value="userSettings.columnWidth"
                 @input="saveSettings({ columnWidth: Number(($event.target as HTMLInputElement).value) })"
                 class="w-full accent-indigo-600 cursor-pointer"

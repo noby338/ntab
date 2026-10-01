@@ -23,6 +23,8 @@ export const DEFAULT_SETTINGS: UserSettings = {
   hideBookmarkIcons: false,
   showTopSites: true,
   showRecentlyClosed: true,
+  showRecentlyDeleted: true,
+  confirmBeforeDelete: true,
   topSitesCount: 8,
   recentlyClosedCount: 8,
   showClock: true,
@@ -167,18 +169,24 @@ export function toggleFolderVisibility(folderId: string): void {
   saveSettings({ hiddenFolderIds: Array.from(current) });
 }
 
-export function setSpecialWidgetVisible(id: 'top_sites' | 'recently_closed' | 'apps', visible: boolean): void {
+export function setSpecialWidgetVisible(
+  id: 'top_sites' | 'recently_closed' | 'apps' | 'recently_deleted',
+  visible: boolean
+): void {
   if (id === 'top_sites') {
     userSettings.value.showTopSites = visible;
   } else if (id === 'recently_closed') {
     userSettings.value.showRecentlyClosed = visible;
   } else if (id === 'apps') {
     userSettings.value.showApps = visible;
+  } else if (id === 'recently_deleted') {
+    userSettings.value.showRecentlyDeleted = visible;
   }
   saveSettings({
     showTopSites: userSettings.value.showTopSites,
     showRecentlyClosed: userSettings.value.showRecentlyClosed,
     showApps: userSettings.value.showApps,
+    showRecentlyDeleted: userSettings.value.showRecentlyDeleted,
   });
 
   const cols = [...columnLayout.value.columns.map((c) => [...c])];
@@ -265,8 +273,8 @@ if (typeof window !== 'undefined') {
 export function buildAdaptiveExportData(): AdaptiveExportPayload {
   const layout = columnLayout.value.columns.map((col) => {
     return col.map((id) => {
-      if (id === 'top_sites' || id === 'recently_closed' || id === 'apps') {
-        return { specialId: id as 'top_sites' | 'recently_closed' | 'apps' };
+      if (id === 'top_sites' || id === 'recently_closed' || id === 'apps' || id === 'recently_deleted') {
+        return { specialId: id as 'top_sites' | 'recently_closed' | 'apps' | 'recently_deleted' };
       }
       if (id === '1' || id === '2') {
         return { rootId: id as '1' | '2', title: id === '1' ? 'Bookmarks Bar' : 'Other Bookmarks' };
@@ -530,6 +538,7 @@ export async function loadColumnLayout(
   allKnownIds.add('top_sites');
   allKnownIds.add('recently_closed');
   allKnownIds.add('apps');
+  allKnownIds.add('recently_deleted');
 
   if (savedColumns && savedColumns.length > 0) {
     // Prune deleted folder IDs and remove empty columns
@@ -582,6 +591,17 @@ export async function loadColumnLayout(
       }
     }
 
+    if (userSettings.value.showRecentlyDeleted && !usedIds.has('recently_deleted')) {
+      if (sanitized.length > 1) {
+        const targetCol = sanitized[sanitized.length - 1];
+        if (targetCol) targetCol.push('recently_deleted');
+      } else if (sanitized.length === 1) {
+        sanitized[0]?.push('recently_deleted');
+      } else {
+        sanitized.push(['recently_deleted']);
+      }
+    }
+
     columnLayout.value = { columns: sanitized };
   } else {
     // Generate fresh default layout
@@ -599,6 +619,7 @@ export async function loadColumnLayout(
     if (userSettings.value.showApps) specials.push('apps');
     if (userSettings.value.showTopSites) specials.push('top_sites');
     if (userSettings.value.showRecentlyClosed) specials.push('recently_closed');
+    if (userSettings.value.showRecentlyDeleted) specials.push('recently_deleted');
     if (specials.length > 0) cols.push(specials);
 
     columnLayout.value = { columns: cols.length > 0 ? cols : [['1']] };

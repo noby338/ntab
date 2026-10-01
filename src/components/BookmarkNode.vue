@@ -24,6 +24,12 @@ import {
   endGlobalDrag,
 } from '../services/dragScroll';
 import { startCardDrag, endCardDrag } from '../services/cardDragCoordinator';
+import {
+  isBatchPointerSelecting,
+  batchTargetSelectState,
+  startBatchSelect,
+  endBatchSelect,
+} from '../services/batchSelectionCoordinator';
 import { t } from '../locales';
 
 const props = defineProps<{
@@ -107,8 +113,30 @@ watch(isGlobalDragging, (dragging) => {
   }
 });
 
+function handleRowPointerDown(event: PointerEvent) {
+  if (!props.isBatchMode || event.button !== 0) return;
+  const willSelect = !isSelected.value;
+  startBatchSelect(willSelect);
+  emit('toggleSelect', props.node.id, event as unknown as MouseEvent);
+}
+
+function handleRowPointerEnter(event: PointerEvent) {
+  if (!props.isBatchMode || !isBatchPointerSelecting.value) return;
+  if (event.buttons !== 1) {
+    endBatchSelect();
+    return;
+  }
+  if (isSelected.value !== batchTargetSelectState.value) {
+    emit('toggleSelect', props.node.id, event as unknown as MouseEvent);
+  }
+}
+
 function handleRowClick(event: MouseEvent) {
-  if (props.isBatchMode || event.ctrlKey || event.metaKey || event.shiftKey) {
+  if (props.isBatchMode) {
+    event.preventDefault();
+    return;
+  }
+  if (event.ctrlKey || event.metaKey || event.shiftKey) {
     event.preventDefault();
     emit('toggleSelect', props.node.id, event);
     return;
@@ -287,9 +315,11 @@ function handleDelete(event: MouseEvent) {
       @dragover="handleDragOver"
       @dragleave="handleDragLeave"
       @drop="handleDrop"
+      @pointerdown="handleRowPointerDown"
+      @pointerenter="handleRowPointerEnter"
       @click="handleRowClick"
       @contextmenu.prevent.stop="handleContextMenu"
-      class="group relative flex items-center rounded-lg cursor-pointer transition-colors overflow-hidden"
+      class="group relative flex items-center rounded-lg cursor-pointer transition-colors overflow-hidden select-none"
       :style="{
         fontSize: 'var(--bookmark-font-size, 14px)',
         height: 'var(--bookmark-row-height, 32px)',
@@ -311,13 +341,13 @@ function handleDelete(event: MouseEvent) {
     >
       <div
         v-if="isBatchMode || isSelected"
-        class="flex-shrink-0 flex items-center justify-center mr-0.5"
-        @click.stop="emit('toggleSelect', node.id, $event)"
+        class="flex-shrink-0 flex items-center justify-center mr-0.5 pointer-events-none"
       >
         <input
           type="checkbox"
           :checked="isSelected"
-          class="rounded border-slate-300 dark:border-zinc-700 text-indigo-600 focus:ring-indigo-500 dark:bg-zinc-900 cursor-pointer"
+          tabindex="-1"
+          class="rounded border-slate-300 dark:border-zinc-700 text-indigo-600 focus:ring-indigo-500 dark:bg-zinc-900 pointer-events-none"
           :style="{
             width: 'clamp(11px, calc(var(--bookmark-row-height, 32px) - 6px), 16px)',
             height: 'clamp(11px, calc(var(--bookmark-row-height, 32px) - 6px), 16px)',

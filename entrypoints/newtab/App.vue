@@ -7,6 +7,7 @@ import {
   EyeOff,
   Activity,
   Heart,
+  X,
 } from '@lucide/vue';
 import {
   loadBookmarks,
@@ -41,6 +42,7 @@ import {
   activeDragCardInfo,
   resolveDropTarget,
   endCardDrag,
+  type DropTarget,
 } from '../../src/services/cardDragCoordinator';
 import { t, activeLanguage } from '../../src/locales';
 import { getActiveShortcut, matchesShortcut } from '../../src/services/hotkeyService';
@@ -50,7 +52,15 @@ import type { BookmarkItem } from '../../src/types';
 const isBatchMode = ref(false);
 const isCornerActive = ref(false);
 const isButtonsHovered = ref(false);
+const showFooterGuideTip = ref(false);
 let cornerCloseTimer: ReturnType<typeof setTimeout> | null = null;
+
+function dismissFooterGuideTip() {
+  showFooterGuideTip.value = false;
+  try {
+    localStorage.setItem('ntab_footer_tip_dismissed', '1');
+  } catch {}
+}
 
 function handleCornerEnter() {
   if (cornerCloseTimer) {
@@ -93,6 +103,11 @@ function openHealthSettings() {
   isSettingsOpen.value = true;
 }
 
+function openAccountSettings() {
+  settingsInitialTab.value = 'backup';
+  isSettingsOpen.value = true;
+}
+
 function openDonateSettings() {
   settingsInitialTab.value = 'donate';
   isSettingsOpen.value = true;
@@ -119,6 +134,10 @@ const deleteModalState = ref<{
 });
 
 function openDeleteModal(title: string, description: string, onConfirm: () => Promise<void>) {
+  if (userSettings.value.confirmBeforeDelete === false) {
+    void onConfirm();
+    return;
+  }
   deleteModalState.value = {
     isOpen: true,
     title,
@@ -311,60 +330,86 @@ function handleMainDragLeave(event: DragEvent) {
 async function handleMainDrop(event: DragEvent) {
   if (globalDragType.value !== 'folder_card' && globalDragType.value !== 'folder') return;
   event.preventDefault();
-  const target = activeDropTarget.value;
+  const target = activeDropTarget.value || resolveDropTarget(event.clientX, event.clientY);
   const dragged = activeDragCardInfo.value;
   endCardDrag();
   endGlobalDrag();
 
   if (!target || !dragged) return;
 
-  const isFromNestedFolder = dragged.fromCol === -1;
+  await executeCardDrop(dragged.id, target);
+}
 
-  if (target.type === 'column_slot') {
-    if (isFromNestedFolder) {
-      await moveBookmark(dragged.id, '2');
-      const currentCols = [...columnLayout.value.columns.map((c) => [...c])];
-      currentCols.splice(target.slotIndex, 0, [dragged.id]);
-      const cleanCols = currentCols.filter((c) => c.length > 0);
-      saveColumnLayout({ columns: cleanCols.length > 0 ? cleanCols : [[dragged.id]] });
-      await loadBookmarks();
-    } else {
-      handleMoveFolder({
-        fromCol: dragged.fromCol,
-        fromRow: dragged.fromRow,
-        toCol: target.slotIndex,
-        toRow: 0,
-        direction: 'slot',
-        slotIndex: target.slotIndex,
-      });
-    }
-  } else if (target.type === 'card_slot') {
-    if (isFromNestedFolder) {
-      await moveBookmark(dragged.id, '2');
-      const currentCols = [...columnLayout.value.columns.map((c) => [...c])];
-      const targetCol = currentCols[target.colIndex] || [];
-      if (!currentCols[target.colIndex]) currentCols[target.colIndex] = targetCol;
-      targetCol.splice(target.slotIndex, 0, dragged.id);
-      const cleanCols = currentCols.filter((c) => c.length > 0);
-      saveColumnLayout({ columns: cleanCols.length > 0 ? cleanCols : [[dragged.id]] });
-      await loadBookmarks();
-    } else {
-      handleMoveFolder({
-        fromCol: dragged.fromCol,
-        fromRow: dragged.fromRow,
-        toCol: target.colIndex,
-        toRow: target.slotIndex,
-        direction: 'card_slot',
-        slotIndex: target.slotIndex,
-      });
-    }
-  } else if (target.type === 'folder_nest') {
-    const ok = await moveBookmark(dragged.id, target.folderId);
+async function executeCardDrop(cardId: string, target: DropTarget) {
+  const isFromNestedFolder = activeDragCardInfo.value?.fromCol === -1;
+
+  if (target.type === 'folder_nest') {
+    const ok = await moveBookmark(cardId, target.folderId);
     if (ok) {
-      removeFromColumnLayout(dragged.id);
+      removeFromColumnLayout(cardId);
       await loadBookmarks();
+    }
+    return;
+  }
+
+  const cols = columnLayout.value.columns.map((c) => [...c]);
+
+  for (let c = 0; c < cols.length; c++) {
+    const col = cols[c];
+    if (!col) continue;
+    const r = col.indexOf(cardId);
+    if (r !== -1) {
+      col.splice(r, 1);
+      break;
     }
   }
+
+  const dispCols = displayedColumns.value;
+
+  if (target.type === 'column_slot') {
+    let insertColIndex = cols.length;
+    if (target.slotIndex === 0) {
+      insertColIndex = 0;
+    } else if (target.slotIndex >= dispCols.length) {
+      insertColIndex = cols.length;
+    } else {
+      const refFolderId = dispCols[target.slotIndex]?.[0];
+      if (refFolderId) {
+        const foundIdx = cols.findIndex((col) => col.includes(refFolderId));
+        insertColIndex = foundIdx !== -1 ? foundIdx : target.slotIndex;
+      } else {
+        insertColIndex = target.slotIndex;
+      }
+    }
+
+    cols.splice(insertColIndex, 0, [cardId]);
+  } else if (target.type === 'card_slot') {
+    const refCol = dispCols[target.colIndex];
+    let realColIndex = -1;
+    if (refCol && refCol.length > 0) {
+      const anchorId = refCol[0];
+      if (anchorId) {
+        realColIndex = cols.findIndex((col) => col.includes(anchorId));
+      }
+    }
+    if (realColIndex === -1) {
+      realColIndex = Math.min(target.colIndex, cols.length);
+    }
+
+    const targetCol = cols[realColIndex] || [];
+    if (!cols[realColIndex]) cols[realColIndex] = targetCol;
+
+    const boundedSlot = Math.min(target.slotIndex, targetCol.length);
+    targetCol.splice(boundedSlot, 0, cardId);
+  }
+
+  if (isFromNestedFolder) {
+    await moveBookmark(cardId, '2');
+  }
+
+  const cleanCols = cols.filter((c) => c.length > 0);
+  await saveColumnLayout({ columns: cleanCols.length > 0 ? cleanCols : [[cardId]] });
+  await loadBookmarks();
 }
 
 function handleDeleteItem(id: string, isFolder: boolean) {
@@ -393,6 +438,7 @@ const displayedColumns = computed(() => {
         if (folderId === 'top_sites') return userSettings.value.showTopSites;
         if (folderId === 'recently_closed') return userSettings.value.showRecentlyClosed;
         if (folderId === 'apps') return userSettings.value.showApps;
+        if (folderId === 'recently_deleted') return userSettings.value.showRecentlyDeleted !== false;
         return !userSettings.value.hiddenFolderIds?.includes(folderId);
       });
     })
@@ -460,6 +506,15 @@ onMounted(async () => {
   await loadColumnLayout(rawBookmarkTree.value);
   setupBookmarkListeners();
 
+  if (typeof localStorage !== 'undefined') {
+    const dismissed = localStorage.getItem('ntab_footer_tip_dismissed');
+    if (!dismissed) {
+      setTimeout(() => {
+        showFooterGuideTip.value = true;
+      }, 1500);
+    }
+  }
+
   window.addEventListener('keydown', handleGlobalKeyDown);
 });
 
@@ -516,7 +571,7 @@ onUnmounted(() => {
         <button
           type="button"
           @click="openHealthSettings"
-          :title="t('healthCheck.title') || '书签失效体检'"
+          :title="t('healthCheck.title') || '失效检测'"
           class="p-1.5 rounded-xl border border-slate-200/90 dark:border-white/10 bg-white/80 dark:bg-white/5 hover:bg-white dark:hover:bg-white/15 text-slate-800 dark:text-zinc-200 shadow-2xs transition-colors cursor-pointer flex items-center justify-center"
         >
           <Activity class="w-3.5 h-3.5" />
@@ -557,7 +612,7 @@ onUnmounted(() => {
         <button
           v-if="currentGoogleUser"
           type="button"
-          @click="isSettingsOpen = true"
+          @click="openAccountSettings"
           :title="`${currentGoogleUser.name} (${currentGoogleUser.email})`"
           class="p-1 rounded-xl border border-slate-200/90 dark:border-white/10 bg-white/80 dark:bg-white/5 hover:bg-white dark:hover:bg-white/15 shadow-2xs transition-colors cursor-pointer flex items-center justify-center flex-shrink-0"
         >
@@ -660,7 +715,7 @@ onUnmounted(() => {
         <button
           type="button"
           @click="openHealthSettings"
-          :title="t('healthCheck.title') || '书签失效体检'"
+          :title="t('healthCheck.title') || '失效检测'"
           class="rounded-xl border border-slate-200/90 dark:border-white/10 bg-white/80 dark:bg-white/5 hover:bg-white dark:hover:bg-white/15 text-slate-800 dark:text-zinc-200 shadow-2xs transition-colors cursor-pointer flex items-center justify-center p-2"
         >
           <Activity class="w-3.5 h-3.5" />
@@ -701,7 +756,7 @@ onUnmounted(() => {
         <button
           v-if="currentGoogleUser"
           type="button"
-          @click="isSettingsOpen = true"
+          @click="openAccountSettings"
           :title="`${currentGoogleUser.name} (${currentGoogleUser.email})`"
           class="rounded-xl border border-slate-200/90 dark:border-white/10 bg-white/80 dark:bg-white/5 hover:bg-white dark:hover:bg-white/15 text-slate-800 dark:text-zinc-200 shadow-2xs transition-colors cursor-pointer flex items-center gap-2 p-1.5 pr-2.5"
         >
@@ -742,8 +797,10 @@ onUnmounted(() => {
 
     <!-- Main Bookmark Columns Area -->
     <main
-      class="flex-1 overflow-x-auto"
+      class="flex-1 overflow-x-auto min-h-screen"
       :class="userSettings.compactHeader ? (userSettings.showSearch ? 'px-4 pb-8' : 'px-4 pt-3 pb-8') : 'px-8 pb-10'"
+      @dragover="handleMainDragOver"
+      @drop="handleMainDrop"
     >
       <div
         v-if="isLoaded"
@@ -793,6 +850,46 @@ onUnmounted(() => {
       @move-to-folder="handleBatchMove"
       @open-health-check="openHealthSettings"
     />
+
+    <!-- Dismissible Pure Fullscreen Footer Tip Pill -->
+    <div
+      v-if="showFooterGuideTip && !isBatchMode"
+      class="fixed bottom-14 right-6 z-30 max-w-sm p-3.5 rounded-2xl bg-white/95 dark:bg-zinc-900/95 border border-indigo-500/30 shadow-xl backdrop-blur-md text-xs space-y-2 select-none animate-in fade-in slide-in-from-bottom-2 duration-200"
+    >
+      <div class="flex items-start justify-between gap-2">
+        <div class="flex items-center gap-1.5 font-bold text-slate-900 dark:text-zinc-100 text-xs">
+          <span>✨</span>
+          <span>想要关闭底部的 Chrome 页脚？</span>
+        </div>
+        <button
+          type="button"
+          @click="dismissFooterGuideTip"
+          class="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 p-0.5 rounded cursor-pointer"
+          title="不再提示"
+        >
+          <X class="w-3.5 h-3.5" />
+        </button>
+      </div>
+      <div class="text-[11px] text-slate-500 dark:text-zinc-400 leading-relaxed">
+        点击右下角 Chrome 原生自带的 <strong>「自定义 Chrome」</strong> (铅笔图标) → 在右侧栏关闭 <strong>【页脚】</strong> 开关，即可享受全屏极简视觉！
+      </div>
+      <div class="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-zinc-800">
+        <button
+          type="button"
+          @click="openGeneralSettings(); dismissFooterGuideTip()"
+          class="text-indigo-600 dark:text-indigo-400 hover:underline text-[11px] font-medium cursor-pointer"
+        >
+          查看详细说明
+        </button>
+        <button
+          type="button"
+          @click="dismissFooterGuideTip"
+          class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-medium cursor-pointer"
+        >
+          我知道了
+        </button>
+      </div>
+    </div>
 
     <!-- Settings Modal -->
     <SettingsModal

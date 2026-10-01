@@ -176,6 +176,10 @@ function selectOnly404Health() {
 
 function promptHealthDelete() {
   if (healthSelectedDeleteIds.value.size === 0) return;
+  if (userSettings.value.confirmBeforeDelete === false) {
+    void handleConfirmedHealthDelete();
+    return;
+  }
   isHealthConfirmOpen.value = true;
 }
 
@@ -503,7 +507,7 @@ function handleImport() {
             ]"
           >
             <Activity class="w-4 h-4" />
-            <span>{{ t('healthCheck.title') || '失效体检' }}</span>
+            <span>{{ t('healthCheck.title') || '失效检测' }}</span>
             <span
               v-if="dead404Results.length > 0"
               class="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-red-500 text-white"
@@ -736,6 +740,46 @@ function handleImport() {
                   class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                 />
               </label>
+
+              <label class="flex items-center justify-between cursor-pointer p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-800/50">
+                <div>
+                  <span class="text-slate-700 dark:text-zinc-300 font-medium">{{ t('settings.confirmBeforeDelete') || '删除二次确认' }}</span>
+                  <div class="text-[11px] text-slate-400">{{ t('settings.confirmBeforeDeleteDesc') || '关闭后，删除书签或文件夹将直接移入最近删除，不再弹出二次确认' }}</div>
+                </div>
+                <input
+                  type="checkbox"
+                  :checked="userSettings.confirmBeforeDelete !== false"
+                  @change="saveSettings({ confirmBeforeDelete: ($event.target as HTMLInputElement).checked })"
+                  class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                />
+              </label>
+            </div>
+
+            <!-- Pure Fullscreen Guide: Chrome Native Footer -->
+            <div class="p-3.5 rounded-2xl bg-indigo-500/5 dark:bg-indigo-500/10 border border-indigo-500/20 space-y-2.5">
+              <div class="flex items-center gap-2">
+                <span class="text-base">✨</span>
+                <span class="font-semibold text-xs text-slate-800 dark:text-zinc-100">
+                  {{ t('settings.chromeFooterGuideTitle') || '纯净全屏：如何关闭 Chrome 原生底部页脚？' }}
+                </span>
+              </div>
+              <div class="text-[11px] text-slate-500 dark:text-zinc-400 leading-relaxed">
+                {{ t('settings.chromeFooterGuideDesc') || 'Chrome 默认会在新标签页底部保留扩展归属与自定义页脚栏。因 Chrome 安全权限隔离，任何第三方扩展均无权直接通过代码静默关闭它，但你可以通过 Chrome 原生官方开关一键彻底隐藏：' }}
+              </div>
+              <div class="bg-white/80 dark:bg-zinc-900/80 p-2.5 rounded-xl border border-slate-200/60 dark:border-zinc-800 text-[11px] space-y-1.5 text-slate-700 dark:text-zinc-300">
+                <div class="flex items-center gap-2">
+                  <span class="w-4 h-4 rounded-full bg-indigo-500 text-white font-mono font-bold text-[9px] flex items-center justify-center flex-shrink-0">1</span>
+                  <span>点击屏幕右下角已有的 <strong>「自定义 Chrome」</strong> (铅笔图标)</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="w-4 h-4 rounded-full bg-indigo-500 text-white font-mono font-bold text-[9px] flex items-center justify-center flex-shrink-0">2</span>
+                  <span>在浏览器右侧滑出的面板中，找到 <strong>【页脚】</strong> 栏目</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="w-4 h-4 rounded-full bg-indigo-500 text-white font-mono font-bold text-[9px] flex items-center justify-center flex-shrink-0">3</span>
+                  <span>关闭 <strong>「在“新标签页”页面上显示页脚」</strong> 开关，即可享受 100% 极简沉浸视觉！</span>
+                </div>
+              </div>
             </div>
 
             <!-- Search Engine Configuration Section -->
@@ -892,6 +936,20 @@ function handleImport() {
                       class="w-36 accent-indigo-600 cursor-pointer"
                     />
                   </div>
+                </div>
+
+                <div class="p-2.5 rounded-xl border border-slate-100 dark:border-zinc-800 space-y-2 bg-slate-50/50 dark:bg-zinc-950/40">
+                  <label class="flex items-center justify-between cursor-pointer">
+                    <span class="font-medium text-xs text-slate-800 dark:text-zinc-200 flex items-center gap-2">
+                      <span>🗑️</span> {{ t('settings.recentlyDeleted') || '最近删除 (7天)' }}
+                    </span>
+                    <input
+                      type="checkbox"
+                      :checked="userSettings.showRecentlyDeleted !== false"
+                      @change="setSpecialWidgetVisible('recently_deleted', ($event.target as HTMLInputElement).checked)"
+                      class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                    />
+                  </label>
                 </div>
 
                 <div
@@ -1214,7 +1272,7 @@ function handleImport() {
                 <div class="flex items-center gap-2.5">
                   <Activity class="w-5 h-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
                   <div>
-                    <div class="font-bold text-slate-800 dark:text-zinc-100">{{ t('healthCheck.title') || '书签失效健康体检' }}</div>
+                    <div class="font-bold text-slate-800 dark:text-zinc-100">{{ t('healthCheck.title') || '失效检测' }}</div>
                     <div class="text-[11px] text-slate-500 dark:text-zinc-400">
                       {{ t('healthCheck.subtitle') || '超轻量探测 · 仅检测 404 与 403 明确状态' }}
                     </div>
@@ -1239,7 +1297,7 @@ function handleImport() {
                     class="px-3.5 py-1 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-xs shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
                   >
                     <Play class="w-3 h-3 fill-current" />
-                    <span>{{ checkerState.completed > 0 ? (t('healthCheck.recheck') || '重新体检') : (t('healthCheck.start') || '开始体检') }}</span>
+                    <span>{{ checkerState.completed > 0 ? (t('healthCheck.recheck') || '重新检测') : (t('healthCheck.start') || '开始检测') }}</span>
                   </button>
                 </div>
               </div>
@@ -1388,7 +1446,7 @@ function handleImport() {
               >
                 <CheckCircle2 v-if="checkerState.completed > 0" class="w-6 h-6 text-emerald-500 opacity-60" />
                 <Activity v-else class="w-6 h-6 text-indigo-500 opacity-40" />
-                <span>{{ checkerState.completed > 0 ? (t('healthCheck.noIssues') || '此分类下未发现异常书签！') : (t('healthCheck.emptyTitle') || '尚未进行体检，请点击上方“开始体检”') }}</span>
+                <span>{{ checkerState.completed > 0 ? (t('healthCheck.noIssues') || '此分类下未发现异常书签！') : (t('healthCheck.emptyTitle') || '尚未进行失效检测，请点击上方“开始检测”') }}</span>
               </div>
 
               <!-- Selection controls and batch delete button -->

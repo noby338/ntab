@@ -68,7 +68,7 @@ export interface CustomSearchEngine {
 
 export interface SerializedCardItem {
   id?: string;
-  specialId?: 'top_sites' | 'recently_closed' | 'apps';
+  specialId?: 'top_sites' | 'recently_closed' | 'apps' | 'recently_deleted';
   rootId?: '1' | '2';
   title?: string;
   path?: string;
@@ -104,6 +104,8 @@ export interface UserSettings {
   hideBookmarkIcons?: boolean;
   showTopSites: boolean;
   showRecentlyClosed: boolean;
+  showRecentlyDeleted?: boolean;
+  confirmBeforeDelete?: boolean;
   topSitesCount: number;
   recentlyClosedCount: number;
   showClock: boolean;

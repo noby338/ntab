@@ -55,15 +55,21 @@ export const en = {
     specialTopSites: 'Top Sites',
     specialRecentlyClosed: 'Recently Closed',
     specialApps: 'Apps & Extensions',
+    specialRecentlyDeleted: 'Recently Deleted (7 Days)',
     badgeBookmarksBar: 'Bookmarks Bar',
     badgeOtherBookmarks: 'Other',
     badgeCustomFolder: 'Custom',
     badgeTopSites: 'Top Sites',
     badgeRecentlyClosed: 'Recent',
     badgeApps: 'System',
+    badgeRecentlyDeleted: 'Trash',
+    badge7Days: '7 Days',
     emptyRecentlyClosed: 'No recently closed tabs',
     emptyTopSites: 'No top sites available',
     emptyApps: 'No apps or shortcuts found',
+    emptyRecentlyDeleted: 'No bookmarks deleted in the past 7 days',
+    restoreBookmark: 'Restore bookmark',
+    clearTrash: 'Empty trash',
   },
   contextMenu: {
     openInNewTab: 'Open in new tab',
@@ -103,7 +109,7 @@ export const en = {
     cancel: 'Cancel',
   },
   healthCheck: {
-    title: 'Bookmark Health Check',
+    title: 'Dead Link Checker',
     subtitle: 'Ultra-lightweight HEAD probe · Zero wasted data · 404 & 403 separated',
     checkingProgress: 'Checking',
     pause: 'Stop',
@@ -183,7 +189,7 @@ export const en = {
     tabLayout: 'Layout',
     tabShortcuts: 'Shortcuts',
     tabDonate: 'Support',
-    tabBackup: 'Backup',
+    tabBackup: 'Account & Backup',
     supportDeveloper: 'Support Creator',
     language: 'Language',
     languageDesc: 'Choose interface display language',
@@ -223,6 +229,10 @@ export const en = {
     topSitesCount: 'Display count: {count}',
     recentlyClosed: 'Recently Closed Tabs',
     recentlyClosedCount: 'Display count: {count}',
+    recentlyDeleted: 'Recently Deleted (7 Days)',
+    recentlyDeletedDesc: 'Show 7-day deleted bookmarks & folders trash card',
+    confirmBeforeDelete: 'Confirm Before Deleting',
+    confirmBeforeDeleteDesc: 'When disabled, deleted items are directly moved to Recently Deleted without confirmation modal',
     rootFolders: 'Root Bookmark Folders',
     columnWidth: 'Column Width',
     columnWidthDesc: 'Adjust column card width (compact to ultra-wide)',
@@ -263,4 +273,8 @@ export const en = {
   },
 };
 
-export type LocaleMessages = typeof en;
+export type DeepPartial<T> = {
+  [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
+};
+
+export type LocaleMessages = DeepPartial<typeof en>;

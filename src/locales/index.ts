@@ -13,7 +13,7 @@ import { ru } from './ru';
 
 export { type LocaleMessages };
 
-export const LOCALES: Record<Exclude<LanguageCode, 'auto'>, LocaleMessages> = {
+export const LOCALES: Record<Exclude<LanguageCode, 'auto'>, any> = {
   en,
   'zh-CN': zhCN,
   'zh-TW': zhTW,

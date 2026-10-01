@@ -1,5 +1,6 @@
 import { ref, shallowRef } from 'vue';
 import type { BookmarkItem } from '../types';
+import { addRecentlyDeleted } from './recentlyDeleted';
 
 // Reactive state
 export const rawBookmarkTree = shallowRef<BookmarkItem[]>([]);
@@ -408,6 +409,11 @@ export async function createFolder(parentId: string, title: string): Promise<Boo
 }
 
 export async function removeBookmark(id: string, isFolder = false, shouldReload = true): Promise<boolean> {
+  const node = allBookmarksMap.value.get(id) || folderMap.value.get(id);
+  if (node) {
+    void addRecentlyDeleted(node);
+  }
+
   if (!isChrome) {
     folderMap.value.delete(id);
     if (shouldReload) await loadBookmarks();
@@ -444,11 +450,31 @@ export function openUrl(url?: string, newTab = true): void {
 
 // Batch remove bookmarks / folders
 export async function batchRemoveBookmarks(ids: string[]): Promise<number> {
+  const nodes = ids
+    .map((id) => allBookmarksMap.value.get(id) || folderMap.value.get(id))
+    .filter(Boolean) as BookmarkItem[];
+  if (nodes.length > 0) {
+    void addRecentlyDeleted(nodes);
+  }
+
   let successCount = 0;
   for (const id of ids) {
     const isFolder = folderMap.value.has(id);
-    const ok = await removeBookmark(id, isFolder, false);
-    if (ok) successCount++;
+    if (!isChrome) {
+      folderMap.value.delete(id);
+      successCount++;
+    } else {
+      try {
+        if (isFolder) {
+          await chrome.bookmarks.removeTree(id);
+        } else {
+          await chrome.bookmarks.remove(id);
+        }
+        successCount++;
+      } catch (err) {
+        console.error('[NTab] Failed to batch remove bookmark:', err);
+      }
+    }
   }
   await loadBookmarks();
   return successCount;

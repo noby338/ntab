@@ -49,19 +49,14 @@ export function resolveDropTarget(
 
   const colRects = columnEls.map((el) => el.getBoundingClientRect());
 
-  // -------------------------------------------------------------
-  // 1. Inter-Column Slots (Generous horizontal hit boundaries)
-  // -------------------------------------------------------------
-
-  // Far Left Slot 0: to the left of Column 0
   const col0 = colRects[0];
-  if (col0 && clientX < col0.left + col0.width * 0.22) {
+  if (col0 && clientX < col0.left + Math.min(32, col0.width * 0.15)) {
     return { type: 'column_slot', slotIndex: 0 };
   }
 
   // Far Right Slot N: to the right of Column N - 1
   const colLast = colRects[N - 1];
-  if (colLast && clientX > colLast.right - colLast.width * 0.22) {
+  if (colLast && clientX > colLast.right - Math.min(32, colLast.width * 0.15)) {
     return { type: 'column_slot', slotIndex: N };
   }
 
@@ -70,8 +65,9 @@ export function resolveDropTarget(
     const leftCol = colRects[k - 1];
     const rightCol = colRects[k];
     if (leftCol && rightCol) {
-      const zoneStart = leftCol.right - leftCol.width * 0.22;
-      const zoneEnd = rightCol.left + rightCol.width * 0.22;
+      const margin = Math.min(32, Math.max(16, (rightCol.left - leftCol.right) / 2 + 16));
+      const zoneStart = leftCol.right - margin;
+      const zoneEnd = rightCol.left + margin;
       if (clientX >= zoneStart && clientX <= zoneEnd) {
         return { type: 'column_slot', slotIndex: k };
       }
@@ -150,7 +146,8 @@ export function resolveDropTarget(
       const isSpecial =
         cardId === 'top_sites' ||
         cardId === 'recently_closed' ||
-        cardId === 'apps';
+        cardId === 'apps' ||
+        cardId === 'recently_deleted';
 
       if (cardId === dragged.id) {
         return null;

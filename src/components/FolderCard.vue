@@ -13,10 +13,13 @@ import {
   AppWindow,
   Edit3,
   Check,
+  RotateCcw,
+  Globe,
 } from '@lucide/vue';
 import type { BookmarkItem } from '../types';
 import BookmarkNode from './BookmarkNode.vue';
-import { folderMap, topSitesList, recentlyClosedList, moveBookmark, removeBookmark, updateBookmark } from '../services/bookmarks';
+import { folderMap, topSitesList, recentlyClosedList, moveBookmark, removeBookmark, updateBookmark, getFaviconUrl } from '../services/bookmarks';
+import { recentlyDeletedList, restoreBookmark, permanentlyDelete, clearRecentlyDeleted } from '../services/recentlyDeleted';
 import {
   collapsedFolders,
   toggleFolderCollapse,
@@ -75,8 +78,28 @@ const CHROME_APPS_LIST: BookmarkItem[] = [
   { id: 'app-webstore', title: 'Chrome 网上应用店', url: 'https://chromewebstore.google.com', isSpecial: true },
 ];
 
+function formatRelativeTime(timestamp: number): string {
+  const diff = Math.max(0, Date.now() - timestamp);
+  const minutes = Math.floor(diff / (60 * 1000));
+  if (minutes < 1) return t('common.justNow') || '刚刚';
+  if (minutes < 60) return `${minutes}分钟前`;
+  const hours = Math.floor(minutes / (60 * 60 * 1000));
+  if (hours < 24) return `${hours}小时前`;
+  const days = Math.floor(hours / (24 * 60 * 60 * 1000));
+  return `${days}天前`;
+}
+
+function getHostname(url?: string): string {
+  if (!url) return '';
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return url;
+  }
+}
+
 const isMenuOpen = computed(() => activeFolderMenuId.value === props.folderId);
-const isSpecial = computed(() => props.folderId === 'top_sites' || props.folderId === 'recently_closed' || props.folderId === 'apps');
+const isSpecial = computed(() => props.folderId === 'top_sites' || props.folderId === 'recently_closed' || props.folderId === 'apps' || props.folderId === 'recently_deleted');
 const isDeletable = computed(() => !isSpecial.value && props.folderId !== '1' && props.folderId !== '2');
 
 const isRenaming = ref(false);
@@ -135,10 +158,21 @@ function handleHideSpecial() {
     setSpecialWidgetVisible('recently_closed', false);
   } else if (props.folderId === 'apps') {
     setSpecialWidgetVisible('apps', false);
+  } else if (props.folderId === 'recently_deleted') {
+    setSpecialWidgetVisible('recently_deleted', false);
   }
 }
 
 const folderData = computed<BookmarkItem | null>(() => {
+  if (props.folderId === 'recently_deleted') {
+    return {
+      id: 'recently_deleted',
+      title: t('card.specialRecentlyDeleted') || '最近删除 (7天)',
+      children: [],
+      isSpecial: true,
+      unmodifiable: 'managed',
+    };
+  }
   if (props.folderId === 'apps') {
     return {
       id: 'apps',
@@ -215,6 +249,14 @@ const cardTypeMeta = computed<{
       badge: t('card.badgeApps'),
       iconColor: 'text-violet-500',
       badgeClass: 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20',
+    };
+  }
+  if (props.folderId === 'recently_deleted') {
+    return {
+      type: 'recently-deleted',
+      badge: t('card.badge7Days') || '7天保留',
+      iconColor: 'text-rose-500',
+      badgeClass: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
     };
   }
   return {
@@ -384,6 +426,10 @@ async function handleFolderDrop(event: DragEvent) {
           v-else-if="folderId === 'apps'"
           class="w-4 h-4 text-violet-500"
         />
+        <Trash2
+          v-else-if="folderId === 'recently_deleted'"
+          class="w-4 h-4 text-rose-500"
+        />
         <Folder v-else class="w-4 h-4" :class="cardTypeMeta.iconColor" />
       </div>
 
@@ -432,7 +478,7 @@ async function handleFolderDrop(event: DragEvent) {
       </span>
 
       <span
-        v-if="folderData.children"
+        v-if="folderId === 'recently_deleted' || folderData.children"
         class="font-mono font-semibold rounded-full bg-slate-200/80 dark:bg-white/10 text-slate-800 dark:text-zinc-200 leading-none flex items-center justify-center flex-shrink-0"
         :style="{
           fontSize: 'clamp(9px, calc(var(--bookmark-font-size, 14px) * 0.78), 12px)',
@@ -441,7 +487,7 @@ async function handleFolderDrop(event: DragEvent) {
           paddingRight: 'clamp(4px, calc(var(--bookmark-row-height, 32px) * 0.2), 8px)',
         }"
       >
-        {{ folderData.children.length }}
+        {{ folderId === 'recently_deleted' ? recentlyDeletedList.length : (folderData.children ? folderData.children.length : 0) }}
       </span>
 
       <button
@@ -504,6 +550,16 @@ async function handleFolderDrop(event: DragEvent) {
           </button>
 
           <button
+            v-if="folderId === 'recently_deleted' && recentlyDeletedList.length > 0"
+            type="button"
+            @click="clearRecentlyDeleted(); activeFolderMenuId = null"
+            class="w-full flex items-center gap-2 px-2.5 py-2 rounded-xl hover:bg-rose-500/10 text-rose-600 dark:text-rose-400 transition-colors text-left cursor-pointer"
+          >
+            <Trash2 class="w-3.5 h-3.5" />
+            <span>{{ t('card.clearTrash') || '清空回收站' }}</span>
+          </button>
+
+          <button
             v-if="isSpecial"
             type="button"
             @click="handleHideSpecial"
@@ -536,7 +592,67 @@ async function handleFolderDrop(event: DragEvent) {
         minHeight: 'clamp(16px, var(--bookmark-row-height, 32px), 30px)',
       }"
     >
-      <template v-if="folderData.children && folderData.children.length > 0">
+      <!-- Special Case: Recently Deleted (7-day trash) -->
+      <template v-if="folderId === 'recently_deleted'">
+        <div v-if="recentlyDeletedList.length > 0" class="flex flex-col space-y-0.5">
+          <div
+            v-for="item in recentlyDeletedList"
+            :key="item.id"
+            class="group/trash flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-colors text-xs select-none"
+          >
+            <div class="flex items-center gap-2 flex-1 min-w-0 mr-2">
+              <img
+                v-if="item.url"
+                :src="getFaviconUrl(item.url)"
+                class="w-4 h-4 rounded-xs flex-shrink-0"
+                alt=""
+                @error="($event.target as HTMLElement).style.display = 'none'"
+              />
+              <Folder v-else-if="item.isFolder" class="w-4 h-4 text-amber-500 flex-shrink-0" />
+              <Globe v-else class="w-4 h-4 text-slate-400 flex-shrink-0" />
+
+              <div class="flex-1 min-w-0">
+                <div class="truncate text-slate-800 dark:text-zinc-200 font-medium leading-tight">{{ item.title }}</div>
+                <div class="flex items-center gap-1.5 text-[10px] text-slate-400 dark:text-zinc-500 leading-tight">
+                  <span class="truncate max-w-[120px] font-mono">{{ item.url ? getHostname(item.url) : '文件夹' }}</span>
+                  <span>·</span>
+                  <span class="flex-shrink-0">{{ formatRelativeTime(item.deletedAt) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-1 opacity-0 group-hover/trash:opacity-100 transition-opacity flex-shrink-0">
+              <button
+                type="button"
+                @click.stop="restoreBookmark(item.id)"
+                :title="t('card.restoreBookmark') || '恢复书签'"
+                class="p-1 rounded-md text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer"
+              >
+                <RotateCcw class="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                @click.stop="permanentlyDelete(item.id)"
+                :title="t('card.permanentDelete') || '彻底删除'"
+                class="p-1 rounded-md text-rose-500 hover:bg-rose-500/10 cursor-pointer"
+              >
+                <Trash2 class="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div
+          v-else
+          class="py-6 px-4 text-center text-xs text-slate-500 dark:text-zinc-400 select-none flex flex-col items-center justify-center gap-1.5"
+        >
+          <Trash2 class="w-5 h-5 text-slate-300 dark:text-zinc-600 opacity-60" />
+          <span>{{ t('card.emptyRecentlyDeleted') || '7天内没有删除任何书签' }}</span>
+        </div>
+      </template>
+
+      <!-- Standard Bookmark Folder Content -->
+      <template v-else-if="folderData.children && folderData.children.length > 0">
         <BookmarkNode
           v-for="(item, idx) in folderData.children"
           :key="item.id"

@@ -1,0 +1,139 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --bg-main: #f8fafc;
+  --bg-gradient: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.08) 0%, transparent 65%);
+  --card-bg: rgba(255, 255, 255, 0.88);
+  --card-border: rgba(226, 232, 240, 0.95);
+  --card-hover: rgba(241, 245, 249, 0.95);
+  --item-hover: rgba(241, 245, 249, 1);
+  --text-main: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --accent: #4f46e5;
+  --accent-light: #e0e7ff;
+}
+
+.dark {
+  --bg-main: #090a0f;
+  --bg-gradient: radial-gradient(circle at 50% -10%, rgba(99, 102, 241, 0.18) 0%, rgba(15, 23, 42, 0.6) 45%, #090a0f 100%);
+  --card-bg: rgba(17, 20, 31, 0.85);
+  --card-border: rgba(255, 255, 255, 0.09);
+  --card-hover: rgba(26, 31, 48, 0.9);
+  --item-hover: rgba(255, 255, 255, 0.08);
+  --text-main: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --accent: #818cf8;
+  --accent-light: rgba(99, 102, 241, 0.25);
+}
+
+.theme-nord {
+  --bg-main: #242933;
+  --bg-gradient: radial-gradient(circle at 50% -10%, rgba(136, 192, 208, 0.2) 0%, #242933 100%);
+  --card-bg: rgba(46, 52, 64, 0.9);
+  --card-border: rgba(216, 222, 233, 0.12);
+  --card-hover: rgba(59, 66, 82, 0.95);
+  --item-hover: rgba(67, 76, 94, 0.85);
+  --text-main: #eceff4;
+  --text-secondary: #d8dee9;
+  --text-muted: #88c0d0;
+  --accent: #88c0d0;
+  --accent-light: rgba(136, 192, 208, 0.25);
+}
+
+.theme-catppuccin {
+  --bg-main: #181825;
+  --bg-gradient: radial-gradient(circle at 50% -10%, rgba(203, 166, 247, 0.2) 0%, #181825 100%);
+  --card-bg: rgba(30, 30, 46, 0.9);
+  --card-border: rgba(205, 214, 244, 0.12);
+  --card-hover: rgba(49, 50, 68, 0.95);
+  --item-hover: rgba(69, 71, 90, 0.85);
+  --text-main: #cdd6f4;
+  --text-secondary: #bac2de;
+  --text-muted: #a6adc8;
+  --accent: #cba6f7;
+  --accent-light: rgba(203, 166, 247, 0.25);
+}
+
+.theme-tokyo-night {
+  --bg-main: #13141f;
+  --bg-gradient: radial-gradient(circle at 50% -10%, rgba(122, 162, 247, 0.22) 0%, #13141f 100%);
+  --card-bg: rgba(26, 27, 38, 0.9);
+  --card-border: rgba(169, 177, 214, 0.12);
+  --card-hover: rgba(36, 40, 59, 0.95);
+  --item-hover: rgba(41, 46, 66, 0.85);
+  --text-main: #c0caf5;
+  --text-secondary: #a9b1d6;
+  --text-muted: #7aa2f7;
+  --accent: #7aa2f7;
+  --accent-light: rgba(122, 162, 247, 0.25);
+}
+
+.theme-cream {
+  --bg-main: #fbf7ee;
+  --bg-gradient: radial-gradient(circle at 50% 0%, rgba(217, 180, 130, 0.18) 0%, #fbf7ee 100%);
+  --card-bg: rgba(255, 253, 248, 0.94);
+  --card-border: rgba(224, 215, 196, 0.9);
+  --card-hover: rgba(246, 240, 227, 0.95);
+  --item-hover: rgba(238, 230, 212, 0.7);
+  --text-main: #383025;
+  --text-secondary: #635746;
+  --text-muted: #9e8e78;
+  --accent: #966b38;
+  --accent-light: rgba(150, 107, 56, 0.15);
+}
+
+.theme-sepia {
+  --bg-main: #2b221d;
+  --bg-gradient: radial-gradient(circle at 50% -10%, rgba(217, 135, 78, 0.22) 0%, #2b221d 100%);
+  --card-bg: rgba(54, 43, 37, 0.92);
+  --card-border: rgba(168, 132, 109, 0.22);
+  --card-hover: rgba(71, 57, 49, 0.95);
+  --item-hover: rgba(87, 70, 60, 0.8);
+  --text-main: #faebd7;
+  --text-secondary: #d9c5b2;
+  --text-muted: #b39b85;
+  --accent: #e0985c;
+  --accent-light: rgba(224, 152, 92, 0.25);
+}
+
+.theme-popover {
+  background-color: var(--card-bg);
+  border: 1px solid var(--card-border);
+  color: var(--text-main);
+  box-shadow: 0 12px 30px -4px rgba(0, 0, 0, 0.35), 0 4px 12px -2px rgba(0, 0, 0, 0.25);
+}
+
+.theme-popover-item:hover {
+  background-color: var(--item-hover);
+}
+
+body {
+  background-color: var(--bg-main);
+  background-image: var(--bg-gradient);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  color: var(--text-main);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+@layer base {
+  /* custom slim scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(156, 163, 175, 0.25);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(156, 163, 175, 0.5);
+  }
+}

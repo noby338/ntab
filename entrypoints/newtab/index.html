@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NTab</title>
+    <link rel="icon" href="/icon/32.png" />
+    <script>
+      (function () {
+        try {
+          var raw = localStorage.getItem('ntab_settings');
+          var s = raw ? JSON.parse(raw) : null;
+          var theme = s && s.theme ? s.theme : 'system';
+          var isDark =
+            theme === 'dark' ||
+            (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches) ||
+            theme === 'nord' ||
+            theme === 'catppuccin' ||
+            theme === 'tokyo-night' ||
+            theme === 'sepia';
+          var root = document.documentElement;
+          if (isDark) root.classList.add('dark');
+          if (theme && theme !== 'system' && theme !== 'light' && theme !== 'dark') {
+            root.classList.add('theme-' + theme);
+          }
+          if (s) {
+            if (s.fontSize) root.style.setProperty('--bookmark-font-size', s.fontSize + 'px');
+            if (s.rowHeight) root.style.setProperty('--bookmark-row-height', s.rowHeight + 'px');
+            if (s.columnWidth) root.style.setProperty('--column-width', s.columnWidth + 'px');
+            if (s.columnGap) root.style.setProperty('--column-gap', s.columnGap + 'px');
+            if (s.cardRadius) root.style.setProperty('--card-radius', s.cardRadius + 'px');
+            if (s.backdropBlur) root.style.setProperty('--backdrop-blur', s.backdropBlur + 'px');
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+      }
+      html.dark, html.dark body {
+        background-color: #090a0f !important;
+        color: #f8fafc !important;
+      }
+      html.theme-nord, html.theme-nord body {
+        background-color: #242933 !important;
+      }
+      html.theme-catppuccin, html.theme-catppuccin body {
+        background-color: #181825 !important;
+      }
+      html.theme-tokyo-night, html.theme-tokyo-night body {
+        background-color: #13141f !important;
+      }
+      html.theme-cream, html.theme-cream body {
+        background-color: #fbf7ee !important;
+      }
+      html.theme-sepia, html.theme-sepia body {
+        background-color: #2b221d !important;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen antialiased">
+    <div id="app"></div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

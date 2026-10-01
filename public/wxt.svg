@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="bg-ntab" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#18181b" />
+      <stop offset="100%" stop-color="#000000" />
+    </linearGradient>
+    <linearGradient id="left-ribbon" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#818cf8" />
+      <stop offset="100%" stop-color="#4f46e5" />
+    </linearGradient>
+    <linearGradient id="right-ribbon" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+    <linearGradient id="diag-ribbon" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4f46e5" />
+      <stop offset="100%" stop-color="#38bdf8" />
+    </linearGradient>
+  </defs>
+
+  <rect width="128" height="128" rx="28" fill="url(#bg-ntab)" />
+  <rect width="126" height="126" x="1" y="1" rx="27" fill="none" stroke="#27272a" stroke-width="1.5" />
+
+  <polygon points="50,24 78,64 78,84 50,44" fill="url(#diag-ribbon)" />
+
+  <path d="M 28 24 L 50 24 L 50 104 L 39 93 L 28 104 Z" fill="url(#left-ribbon)" />
+
+  <path d="M 78 24 L 89 35 L 100 24 L 100 104 L 78 104 Z" fill="url(#right-ribbon)" />
+</svg>

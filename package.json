@@ -2,7 +2,7 @@
   "name": "ntab",
   "description": "NTab - Modern, fast and customizable new tab page with smart bookmark management",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "scripts": {
     "dev": "wxt",

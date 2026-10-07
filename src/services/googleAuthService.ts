@@ -20,9 +20,7 @@ const STORAGE_KEY_USER = 'ntab_google_user';
 const STORAGE_KEY_LAST_SYNC = 'ntab_google_last_sync';
 const CONFIG_FILE_NAME = 'ntab_config.json';
 
-// Default OAuth Client ID for NTab extension
-// Can be customized by user in advanced settings
-export const DEFAULT_GOOGLE_CLIENT_ID = '983675841267-27s4g9v6v9g4q5t4f5v9g4q5t4f5v9g4.apps.googleusercontent.com';
+export const DEFAULT_GOOGLE_CLIENT_ID = '439583941688-pcbij28la10ts0lfmpuctnh3urr8lirl.apps.googleusercontent.com';
 
 function loadCachedUser(): GoogleUser | null {
   if (typeof window === 'undefined') return null;

@@ -20,7 +20,7 @@ const STORAGE_KEY_USER = 'ntab_google_user';
 const STORAGE_KEY_LAST_SYNC = 'ntab_google_last_sync';
 const CONFIG_FILE_NAME = 'ntab_config.json';
 
-export const DEFAULT_GOOGLE_CLIENT_ID = '439583941688-pcbij28la10ts0lfmpuctnh3urr8lirl.apps.googleusercontent.com';
+export const DEFAULT_GOOGLE_CLIENT_ID = '439583941688-f4knkqkd65rpul6m7hsescmjfhpem8jp.apps.googleusercontent.com';
 const STORAGE_KEY_CUSTOM_CLIENT_ID = 'ntab_custom_client_id';
 
 export function getCustomClientId(): string {

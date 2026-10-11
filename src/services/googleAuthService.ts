@@ -21,6 +21,24 @@ const STORAGE_KEY_LAST_SYNC = 'ntab_google_last_sync';
 const CONFIG_FILE_NAME = 'ntab_config.json';
 
 export const DEFAULT_GOOGLE_CLIENT_ID = '439583941688-pcbij28la10ts0lfmpuctnh3urr8lirl.apps.googleusercontent.com';
+const STORAGE_KEY_CUSTOM_CLIENT_ID = 'ntab_custom_client_id';
+
+export function getCustomClientId(): string {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem(STORAGE_KEY_CUSTOM_CLIENT_ID) || '';
+  }
+  return '';
+}
+
+export function setCustomClientId(id: string): void {
+  if (typeof window !== 'undefined') {
+    if (id.trim()) {
+      localStorage.setItem(STORAGE_KEY_CUSTOM_CLIENT_ID, id.trim());
+    } else {
+      localStorage.removeItem(STORAGE_KEY_CUSTOM_CLIENT_ID);
+    }
+  }
+}
 
 function loadCachedUser(): GoogleUser | null {
   if (typeof window === 'undefined') return null;
@@ -80,7 +98,7 @@ export const isRealExtension =
   location.protocol === 'chrome-extension:';
 
 export async function loginWithGoogle(customClientId?: string): Promise<{ success: boolean; error?: string }> {
-  const clientId = (customClientId || DEFAULT_GOOGLE_CLIENT_ID).trim();
+  const clientId = (customClientId || getCustomClientId() || DEFAULT_GOOGLE_CLIENT_ID).trim();
 
   if (!isRealExtension) {
     const mockUser: GoogleUser = {

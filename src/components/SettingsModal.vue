@@ -99,6 +99,13 @@ const emit = defineEmits<{
 
 const activeTab = ref<'appearance' | 'layout' | 'shortcuts' | 'health' | 'donate' | 'backup'>('appearance');
 
+const extensionVersion = computed(() => {
+  if (typeof chrome !== 'undefined' && chrome.runtime?.getManifest) {
+    return chrome.runtime.getManifest().version || '1.0.1';
+  }
+  return '1.0.1';
+});
+
 const healthTab = ref<'dead_404' | 'blocked_403'>('dead_404');
 const healthSelectedDeleteIds = ref<Set<string>>(new Set());
 const isHealthDeleting = ref(false);
@@ -413,7 +420,7 @@ function handleImport() {
         >
           <div class="flex items-center gap-3">
             <span class="text-lg font-bold tracking-tight text-slate-900 dark:text-zinc-100">{{ t('settings.title') }}</span>
-            <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-mono">v1.0.0</span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-mono">v{{ extensionVersion }}</span>
 
             <!-- Top Header Account Badge -->
             <div

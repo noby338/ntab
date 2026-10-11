@@ -101,9 +101,9 @@ const activeTab = ref<'appearance' | 'layout' | 'shortcuts' | 'health' | 'donate
 
 const extensionVersion = computed(() => {
   if (typeof chrome !== 'undefined' && chrome.runtime?.getManifest) {
-    return chrome.runtime.getManifest().version || '1.0.1';
+    return chrome.runtime.getManifest().version || '1.0.3';
   }
-  return '1.0.1';
+  return '1.0.3';
 });
 
 const healthTab = ref<'dead_404' | 'blocked_403'>('dead_404');

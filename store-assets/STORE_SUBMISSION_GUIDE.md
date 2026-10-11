@@ -8,7 +8,7 @@
 
 | 物料类型 | 本地文件路径 | 规格尺寸 | 强制性 |
 | :--- | :--- | :--- | :--- |
-| **扩展安装包** | `.output/ntab-1.0.0-chrome.zip` | 539 KB (极简轻量) | **必须** |
+| **扩展安装包** | `.output/ntab-1.0.3-chrome.zip` | 539 KB (极简轻量) | **必须** |
 | **应用图标** | `public/icon/128.png` | 128 $\times$ 128 PNG | **必须** |
 | **小尺寸宣传图** | `store-assets/promo-440x280.png` | 440 $\times$ 280 PNG | **必须** |
 | **主屏幕截图 1 (全景)** | `store-assets/screenshot-1-1280x800.png` | 1280 $\times$ 800 PNG | **必须** (至少1张) |

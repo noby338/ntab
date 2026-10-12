@@ -113,7 +113,7 @@ NTab is an open-source, minimalist new tab extension designed for developers, de
 5. Global Multi-Search & AI Fast Switch
 - Built-in instant switching across Google, Bing, DuckDuckGo, Baidu, and GitHub.
 - Supports AI prompts (ChatGPT, Gemini, DeepSeek, Perplexity).
-- Press number keys 1~9 to switch search engines instantly.
+- Switch search engines from the search bar using the available keyboard shortcuts.
 
 6. Offline-First with Optional Configuration Backup
 - No tracking, no analytics SDKs, and zero advertising.
@@ -167,7 +167,7 @@ NTab 是一款专为开发者、设计师与数字生活爱好者打造的开源
 5. 全局秒级搜索与 AI 聚合快捷切换
 - 支持 Google、必应、百度、DuckDuckGo、GitHub 等主流搜索。
 - 支持 ChatGPT、Gemini、DeepSeek、Perplexity 等 AI 快捷提问。
-- 键盘按数字键 1~9 即可实现搜索引擎全局毫秒级轮换。
+- 可在搜索栏使用界面提示的快捷键切换搜索引擎。
 
 6. 离线优先与可选云备份
 - 零分析代码、零用户追踪、零广告插件。
@@ -185,3 +185,9 @@ GitHub 开源仓库：https://github.com/noby338/ntab
 
 - **分类 (Category)**: `Productivity` (生产力工具) / `Workflow & Planning` (工作流与规划)
 - **定价**: `Free` (完全免费)
+
+## 6. 本次后台保存记录
+
+2026-10-12 已进入现有 Chrome 条目，确认公开版本为 1.0.1。商品描述与官网关联、隐私披露和审核测试说明已保存到草稿；以 RELEASE_CHECKLIST.md 中的实际进度为准。
+
+数据类型已选：个人身份信息（Google 名称、邮箱）、身份验证信息（访问令牌）、网络记录（本地历史与常访/最近关闭信息）、网站内容（书签标题与链接）。本地处理也需披露：https://developer.chrome.com/docs/webstore/program-policies/user-data-faq 。

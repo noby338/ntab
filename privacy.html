@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Privacy Policy - NTab</title>
-  <meta name="description" content="NTab Privacy Policy - 100% offline-first, zero tracking, zero personal data collection.">
+  <meta name="description" content="How NTab handles local browser data, optional Google sign-in, and Google Drive configuration backups.">
   <link rel="icon" type="image/svg+xml" href="public/wxt.svg">
   <style>
     :root {
@@ -147,7 +147,7 @@
 
       <div class="header-text">
         <h1>NTab Privacy Policy</h1>
-        <p style="margin:0; font-size: 12px;">Last updated: October 2026 · 100% Zero-Telemetry Architecture</p>
+        <p style="margin:0; font-size: 12px;">Last updated: October 12, 2026</p>
       </div>
 
       <a href="/" class="back-home">← Back to Home</a>
@@ -155,9 +155,11 @@
 
     <p><strong>NTab</strong> is an open-source, minimalist new tab browser extension with smart multi-column bookmark management. We believe privacy is a fundamental human right. NTab is built with an offline-first architecture with zero tracking.</p>
 
-    <h2>1. Zero Data Collection &amp; Tracking</h2>
+    <h2>1. Data Access and Use</h2>
     <ul>
-      <li><strong>No Personal Data Collected:</strong> We do not collect, track, store, or sell any personal data, search queries, browsing habits, IP addresses, or device identifiers.</li>
+      <li><strong>Browser data:</strong> NTab accesses bookmarks, top sites, and recently closed pages or browser history to display and manage your new tab page. Deleted bookmarks are retained in a local recovery list for up to seven days; expired entries are removed when the list is loaded or saved.</li>
+      <li><strong>Local and browser storage:</strong> Preferences and layout data are stored locally. Where available, NTab also writes preferences, collapsed folders, and column layout to Chrome's sync storage, which may sync through your browser account according to your browser settings.</li>
+      <li><strong>Optional Google sign-in:</strong> NTab requests your name, email address, and profile picture to display your signed-in account. It caches this profile, an OAuth access token, and its expiry time in the extension's local storage. These credentials are not sent to a developer-operated backend.</li>
       <li><strong>No Analytics SDKs:</strong> NTab contains zero tracking SDKs, zero analytics trackers (no Google Analytics, Mixpanel, etc.), and zero third-party advertising scripts.</li>
       <li><strong>100% Client-Side Execution:</strong> All layouts, themes, calculations, and bookmark operations run strictly within your local browser sandbox.</li>
     </ul>
@@ -175,12 +177,12 @@
         <tr>
           <td><span class="badge">bookmarks</span></td>
           <td>Reads and organizes bookmarks into multi-column cards; performs user-initiated add, move, rename, and delete actions.</td>
-          <td><strong>100% Local</strong>. Never leaves your computer.</td>
+          <td>Managed through the browser. Optional Drive backups include folder names and paths used to restore layout. Health checking contacts bookmarked websites.</td>
         </tr>
         <tr>
           <td><span class="badge">storage</span></td>
           <td>Saves user preferences (theme, column width, font size, custom search engines, 7-day trash bin).</td>
-          <td>Stored in Chrome's native storage.</td>
+          <td>Local storage and, for supported preferences and layout, Chrome sync storage.</td>
         </tr>
         <tr>
           <td><span class="badge">topSites</span></td>
@@ -200,7 +202,7 @@
         <tr>
           <td><span class="badge">favicon</span></td>
           <td>Fetches website favicons to display alongside bookmarks via Chrome's internal favicon provider.</td>
-          <td>Handled internally by Chrome.</td>
+          <td>Chrome's favicon service for extension bookmarks. Custom search engine icons and fallback icons may contact Google's favicon service with the site's domain.</td>
         </tr>
         <tr>
           <td><span class="badge">identity</span></td>
@@ -209,16 +211,25 @@
         </tr>
         <tr>
           <td><span class="badge">host_permissions (*://*/*)</span></td>
-          <td>Used exclusively for the client-side Bookmark Health Checker. Sends lightweight HEAD requests to detect 404/403 dead links.</td>
-          <td>Direct peer-to-target request. Zero tracking or logs.</td>
+          <td>Allows direct requests for bookmark health checking and connections to Google APIs for optional sign-in and cloud backup.</td>
+          <td>Health checks send HEAD or fallback GET requests to the bookmarked URL. The destination receives normal request information, including the URL and network address, and may keep its own logs.</td>
         </tr>
       </tbody>
     </table>
 
-    <h2>3. Cloud Backup Security</h2>
-    <p>If you choose to enable Google Drive sync, your settings JSON is stored directly in your own private Google Drive AppData folder. The developers of NTab have zero access to your Google account, Drive files, or backups.</p>
+    <h2>3. Optional Google Drive Backup</h2>
+    <p>NTab requests the <code>drive.appdata</code> scope to find, create, read, and update its own configuration file in your Google Drive application data folder. This scope does not grant access to your ordinary Drive documents. Signing in may restore an existing configuration. You can also use the backup and restore controls in Settings.</p>
+    <p>The configuration contains preferences, custom search engine definitions, and layout references such as bookmark folder names, identifiers, and paths. It is not a backup of the complete bookmark tree. Google processes this data to provide Drive storage; NTab does not route it through a developer-operated backend.</p>
+    <p>Google user data is used only for account display and the backup and restore features described here. It is not sold, used for advertising, or used to train generalized AI models. NTab's use and transfer of information received from Google APIs adheres to the <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">Google API Services User Data Policy</a>, including its Limited Use requirements.</p>
 
-    <h2>4. Open Source Transparency</h2>
+    <h2>4. External Services</h2>
+    <p>Submitting a search sends your query to the search engine you select. Loading an external icon or checking a bookmark contacts the relevant service directly. Opening donation links takes you to third-party providers. Those services handle requests under their own privacy policies. The public NTab website is hosted by Vercel, which may process normal web request information to deliver the site.</p>
+
+    <h2>5. Retention and Your Controls</h2>
+    <p>Signing out removes NTab's cached Google profile and access token from local storage. Signing out does not revoke Google's authorization or delete an existing Drive backup. To revoke authorization, visit <a href="https://myaccount.google.com/connections" target="_blank" rel="noopener">Google Account connections</a>. To delete hidden application data, use Google Drive Settings &gt; Manage apps &gt; NTab &gt; Options &gt; Delete hidden app data, where available. Uninstalling removes extension-local data; browser account sync and Drive data are managed separately through their respective services.</p>
+    <p>Local export files are saved to the location you choose and remain until you delete them. For questions about NTab data handling, contact <a href="mailto:tanyang338@gmail.com">tanyang338@gmail.com</a>.</p>
+
+    <h2>6. Open Source Transparency</h2>
     <p>NTab is open-source software under the MIT License. The complete source code is public and verifiable on GitHub:</p>
     <p><a href="https://github.com/noby338/ntab" target="_blank" rel="noopener">https://github.com/noby338/ntab</a></p>
 

@@ -12,7 +12,7 @@ export default defineConfig({
     name: 'NTab',
     short_name: 'NTab',
     description: 'Modern, fast and customizable new tab page with smart bookmark management',
-    version: '1.0.3',
+    version: '1.0.4',
     permissions: [
       'bookmarks',
       'favicon',

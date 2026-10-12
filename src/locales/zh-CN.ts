@@ -185,6 +185,8 @@ export const zhCN: LocaleMessages = {
     actOpenSettingsDesc: '打开系统外观与布局设置',
   },
   auth: {
+    drivePermissionRequired: '尚未授予云盘配置权限。请退出后重新登录，并允许 NTab 访问其自身的配置数据。',
+    sessionExpired: 'Google 登录已过期，请重新登录后同步。',
     googleSyncTitle: 'Google 账号云同步',
     googleSyncDesc: '自动在云端备份排版布局与个性化设置，换机登录一键快速恢复',
     offlineSupported: '免登录可用',

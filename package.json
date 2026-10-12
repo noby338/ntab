@@ -2,9 +2,10 @@
   "name": "ntab",
   "description": "NTab - Modern, fast and customizable new tab page with smart bookmark management",
   "private": true,
-  "version": "1.0.3",
+  "version": "1.0.4",
   "type": "module",
   "scripts": {
+    "check:google-auth": "node scripts/check-google-auth.mjs",
     "dev": "wxt",
     "dev:firefox": "wxt -b firefox",
     "build": "wxt build",

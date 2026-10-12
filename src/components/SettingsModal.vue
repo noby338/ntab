@@ -1726,7 +1726,6 @@ function handleImport() {
 
                   <div class="text-right text-[10px] text-slate-400 font-mono">
                     <div v-if="lastSyncedTime">{{ t('auth.lastSynced') || '上次同步' }}: {{ lastSyncedTime }}</div>
-                    <div v-if="syncStatusMessage" class="text-indigo-600 dark:text-indigo-400 font-sans font-medium">{{ syncStatusMessage }}</div>
                   </div>
                 </div>
 
@@ -1767,6 +1766,7 @@ function handleImport() {
                   <span>{{ t('auth.signInWithGoogle') || 'Google 账号登录' }}</span>
                 </button>
               </div>
+              <p v-if="syncStatusMessage" role="status" class="text-xs text-indigo-600 dark:text-indigo-400 break-words">{{ syncStatusMessage }}</p>
             </div>
 
             <div

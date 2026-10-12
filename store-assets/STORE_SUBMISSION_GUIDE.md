@@ -1,6 +1,6 @@
 # NTab - Chrome Web Store & Edge Add-ons 最终上架提交指南
 
-本指南为您整理了在 **Chrome Web Store 开发者后台** 与 **Edge 扩展中心** 提交审核时所需填写的全部物料、中英文文案以及**权限审核申辩词（Permission Justifications）**。直接复制粘贴即可。
+本指南整理商店物料与文案。提交前先完成 [RELEASE_CHECKLIST.md](./RELEASE_CHECKLIST.md)；此文件及历史安装包不代表已通过审核或完成登录、同步验证。
 
 ---
 
@@ -8,7 +8,7 @@
 
 | 物料类型 | 本地文件路径 | 规格尺寸 | 强制性 |
 | :--- | :--- | :--- | :--- |
-| **扩展安装包** | `.output/ntab-1.0.3-chrome.zip` | 539 KB (极简轻量) | **必须** |
+| **扩展安装包** | `.output/ntab-1.0.4-chrome.zip` | 以本次构建为准 | **必须** |
 | **应用图标** | `public/icon/128.png` | 128 $\times$ 128 PNG | **必须** |
 | **小尺寸宣传图** | `store-assets/promo-440x280.png` | 440 $\times$ 280 PNG | **必须** |
 | **主屏幕截图 1 (全景)** | `store-assets/screenshot-1-1280x800.png` | 1280 $\times$ 800 PNG | **必须** (至少1张) |
@@ -19,7 +19,7 @@
 
 ## 2. 核心合规设置：权限申辩文案 (Permission Justifications)
 
-> ⚠️ **审核重点**：由于插件申请了 `*://*/*` 和 `bookmarks`，Chrome Web Store 人工审核团队要求对每项权限提供合理解释。请将以下经过验证的专业英文直接粘贴到后台对应的输入框中：
+申请的权限应逐项说明用途，且与实际实现一致。以下为待提交文案，不代表获得审核认可。
 
 ### Single Purpose Description (单一用途描述)
 ```text
@@ -28,7 +28,7 @@ A modern, minimalist new tab dashboard that organizes browser bookmarks into res
 
 ### Permission Justification for `host_permissions` (`*://*/*`)
 ```text
-The `<all_urls>` host permission is used strictly on the client side for the "Bookmark Health Checker" feature. It sends lightweight HEAD/GET requests directly from the user's browser to check whether their bookmarked URLs return 404 Not Found or 403 Forbidden errors. No user data, payloads, or browsing history are ever collected, logged, or transmitted to any external server.
+HTTP and HTTPS host access allows the optional Bookmark Health Checker to send HEAD or fallback GET requests directly to bookmarked URLs. Destination websites receive normal request information, including the requested URL and network address. Host access also permits direct connections to Google APIs for optional account sign-in and configuration backup. NTab does not proxy these requests through a developer-operated server.
 ```
 
 ### Permission Justification for `bookmarks`
@@ -38,7 +38,7 @@ Used to read the user's local bookmark hierarchy to display them as multi-column
 
 ### Permission Justification for `storage`
 ```text
-Used to store local user customization preferences (theme selection, custom column percentage widths, font sizes, keyboard shortcut bindings, and the local 7-day trash bin).
+Used to store preferences and layout locally and, where supported, in Chrome sync storage. The recently deleted bookmark recovery list is stored locally for up to seven days. Browser sync may transfer supported settings through the user's browser account.
 ```
 
 ### Permission Justification for `topSites` and `sessions`
@@ -51,13 +51,23 @@ Used locally to render the optional "Top Sites" and "Recently Closed Tabs" widge
 Used solely when the user explicitly clicks "Sign in with Google" to backup and restore their NTab layout configuration JSON file directly to their own private Google Drive (appDataFolder).
 ```
 
+### Permission Justification for `history`
+```text
+Used as a local fallback to display recently closed sites when session information is unavailable. Browser history is not uploaded to the developer or included in the Google Drive configuration backup.
+```
+
+### Permission Justification for `favicon`
+```text
+Used to request bookmark icons from Chrome's internal favicon service for display on the new tab page.
+```
+
 ---
 
 ## 3. 隐私权政策 (Privacy Policy)
 
 - **隐私政策网址 (Privacy Policy URL)** 选项填写：
   `https://ntab-self.vercel.app/privacy`
-  *(已部署在 Vercel 全球 CDN，100% 极速直连可访问，完全合规)*
+  （2026-10-12 已部署修订后的 privacy.html，浏览器确认更新时间为 October 12, 2026；已上线不代表通过审核。）
 
 ---
 
@@ -105,10 +115,11 @@ NTab is an open-source, minimalist new tab extension designed for developers, de
 - Supports AI prompts (ChatGPT, Gemini, DeepSeek, Perplexity).
 - Press number keys 1~9 to switch search engines instantly.
 
-6. 100% Privacy & Zero Telemetry
+6. Offline-First with Optional Configuration Backup
 - No tracking, no analytics SDKs, and zero advertising.
-- Fully operational offline without any forced account registration.
-- Optional private Google Drive backup directly to your personal Drive.
+- Core bookmark management works without sign-in. Online search, icons, and link checking connect to their respective services.
+- Some preferences use browser sync storage; optional Google sign-in caches account information and an access token locally.
+- Optional Google Drive backup stores preferences and folder layout references, not a complete bookmark tree.
 
 Open-source on GitHub: https://github.com/noby338/ntab
 MIT License.
@@ -150,18 +161,19 @@ NTab 是一款专为开发者、设计师与数字生活爱好者打造的开源
 - 支持一键满血恢复原始位置，或永久彻底删除。
 
 4. 超轻量书签失效体检
-- 采用超轻量 HEAD 探测技术，零流量浪费。
-- 精准标记 404 网页丢失与 403 权限拦截，方便批量筛查并清理多年沉淀的失效死链。
+- 优先发送 HEAD 请求，必要时使用 GET 请求检查书签链接。
+- 显示 404、403 等响应以辅助筛查；网站的登录要求或反爬限制可能影响结果，请确认后再删除。
 
 5. 全局秒级搜索与 AI 聚合快捷切换
 - 支持 Google、必应、百度、DuckDuckGo、GitHub 等主流搜索。
 - 支持 ChatGPT、Gemini、DeepSeek、Perplexity 等 AI 快捷提问。
 - 键盘按数字键 1~9 即可实现搜索引擎全局毫秒级轮换。
 
-6. 极致隐私，零数据收集
+6. 离线优先与可选云备份
 - 零分析代码、零用户追踪、零广告插件。
-- 100% 本地离线优先架构，无需强制注册或登录即可完整使用。
-- 仅提供直连 Google Drive 的个人私有云备份选项。
+- 核心书签管理无需登录；在线搜索、图标加载和失效检测会连接相关服务。
+- 部分设置使用浏览器同步存储；可选 Google 登录会在本地缓存账号资料与访问令牌。
+- Google Drive 备份包含偏好设置与书签文件夹布局引用，不是完整书签备份。
 
 GitHub 开源仓库：https://github.com/noby338/ntab
 开源许可：MIT License

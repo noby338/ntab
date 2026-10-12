@@ -46,9 +46,10 @@ function loadCachedUser(): GoogleUser | null {
     const raw = localStorage.getItem(STORAGE_KEY_USER);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed && parsed.email) {
+      if (parsed && parsed.email && Number.isFinite(parsed.expiresAt) && parsed.expiresAt > Date.now()) {
         return parsed;
       }
+      localStorage.removeItem(STORAGE_KEY_USER);
     }
   } catch {}
   return null;
@@ -116,6 +117,7 @@ export async function loginWithGoogle(customClientId?: string): Promise<{ succes
 
   try {
     const redirectUrl = chrome.identity.getRedirectURL();
+    const state = crypto.randomUUID();
     const scopes = [
       'openid',
       'email',
@@ -129,6 +131,7 @@ export async function loginWithGoogle(customClientId?: string): Promise<{ succes
       `response_type=token&` +
       `redirect_uri=${encodeURIComponent(redirectUrl)}&` +
       `scope=${encodeURIComponent(scopes.join(' '))}&` +
+      `state=${encodeURIComponent(state)}&` +
       `prompt=select_account`;
 
     const responseUrl = await new Promise<string>((resolve, reject) => {
@@ -153,11 +156,21 @@ export async function loginWithGoogle(customClientId?: string): Promise<{ succes
     const urlObj = new URL(responseUrl);
     const hash = urlObj.hash.substring(1);
     const params = new URLSearchParams(hash);
+    const expectedRedirect = new URL(redirectUrl);
+    if (urlObj.origin !== expectedRedirect.origin || urlObj.pathname !== expectedRedirect.pathname || params.get('state') !== state) {
+      return { success: false, error: 'Google sign-in response could not be verified. Please sign in again.' };
+    }
+    if (params.has('error')) {
+      return { success: false, error: params.get('error_description') || params.get('error') || 'Google sign-in failed' };
+    }
     const token = params.get('access_token');
     const expiresIn = parseInt(params.get('expires_in') || '3600', 10);
 
     if (!token) {
       return { success: false, error: 'No access token returned' };
+    }
+    if (!Number.isFinite(expiresIn) || expiresIn <= 0) {
+      return { success: false, error: 'Invalid access token expiry returned' };
     }
 
     // Fetch user profile info
@@ -182,10 +195,8 @@ export async function loginWithGoogle(customClientId?: string): Promise<{ succes
     saveSession(user);
 
     // Auto-check if remote configuration exists and restore if needed
-    try {
-      await restoreFromGoogleCloud();
-    } catch {
-      // If no remote backup exists yet, upload initial backup
+    const restored = await restoreFromGoogleCloud();
+    if (!restored.success && restored.code === 'no_backup') {
       await backupToGoogleCloud();
     }
 
@@ -205,6 +216,16 @@ export function logoutGoogle(): void {
 // Stores config directly in the user's private hidden Google Drive appDataFolder
 // -------------------------------------------------------------
 
+async function driveError(res: Response): Promise<Error> {
+  const body = await res.json().catch(() => null);
+  const reason = body?.error?.errors?.[0]?.reason;
+  const message = body?.error?.message;
+  if (reason === 'insufficientPermissions') {
+    return new Error(t('auth.drivePermissionRequired'));
+  }
+  return new Error(`Google Drive (${res.status}${reason ? `, ${reason}` : ''})${message ? `: ${message}` : ''}`);
+}
+
 async function findRemoteConfigFile(token: string): Promise<string | null> {
   const query = encodeURIComponent(`name = '${CONFIG_FILE_NAME}' and 'appDataFolder' in parents and trashed = false`);
   const res = await fetch(
@@ -214,7 +235,7 @@ async function findRemoteConfigFile(token: string): Promise<string | null> {
     }
   );
 
-  if (!res.ok) return null;
+  if (!res.ok) throw await driveError(res);
   const data = await res.json();
   const file = data.files?.[0];
   return file?.id || null;
@@ -223,6 +244,11 @@ async function findRemoteConfigFile(token: string): Promise<string | null> {
 export async function backupToGoogleCloud(): Promise<{ success: boolean; error?: string }> {
   const user = currentGoogleUser.value;
   if (!user) return { success: false, error: 'Not logged in' };
+  if (isRealExtension && user.expiresAt <= Date.now()) {
+    saveSession(null);
+    syncStatusMessage.value = t('auth.sessionExpired');
+    return { success: false, error: syncStatusMessage.value };
+  }
 
   isSyncing.value = true;
   syncStatusMessage.value = t('auth.syncingBackup') || 'Uploading backup to Google Drive...';
@@ -253,7 +279,7 @@ export async function backupToGoogleCloud(): Promise<{ success: boolean; error?:
           body: jsonString,
         }
       );
-      if (!updateRes.ok) throw new Error(`Upload failed: ${updateRes.statusText}`);
+      if (!updateRes.ok) throw await driveError(updateRes);
     } else {
       // Create new file in AppData via multipart POST
       const boundary = '-------314159265358979323846';
@@ -285,23 +311,28 @@ export async function backupToGoogleCloud(): Promise<{ success: boolean; error?:
           body: multipartRequestBody,
         }
       );
-      if (!createRes.ok) throw new Error(`Create failed: ${createRes.statusText}`);
+      if (!createRes.ok) throw await driveError(createRes);
     }
 
     recordSyncTime();
     syncStatusMessage.value = t('auth.backupSuccess') || 'Settings safely backed up to Google Drive';
     return { success: true };
   } catch (err: any) {
-    syncStatusMessage.value = t('auth.backupFailed') || 'Cloud backup failed';
+    syncStatusMessage.value = `${t('auth.backupFailed') || 'Cloud backup failed'}${err?.message ? `: ${err.message}` : ''}`;
     return { success: false, error: err?.message || 'Cloud backup failed' };
   } finally {
     isSyncing.value = false;
   }
 }
 
-export async function restoreFromGoogleCloud(): Promise<{ success: boolean; error?: string }> {
+export async function restoreFromGoogleCloud(): Promise<{ success: boolean; error?: string; code?: 'no_backup' }> {
   const user = currentGoogleUser.value;
   if (!user) return { success: false, error: 'Not logged in' };
+  if (isRealExtension && user.expiresAt <= Date.now()) {
+    saveSession(null);
+    syncStatusMessage.value = t('auth.sessionExpired');
+    return { success: false, error: syncStatusMessage.value };
+  }
 
   isSyncing.value = true;
   syncStatusMessage.value = t('auth.pullingBackup') || 'Pulling settings from Google Drive...';
@@ -315,7 +346,8 @@ export async function restoreFromGoogleCloud(): Promise<{ success: boolean; erro
     } else {
       const fileId = await findRemoteConfigFile(user.accessToken);
       if (!fileId) {
-        return { success: false, error: 'No cloud backup found for this account' };
+        syncStatusMessage.value = 'No cloud backup found for this account';
+        return { success: false, error: syncStatusMessage.value, code: 'no_backup' };
       }
 
       const getRes = await fetch(
@@ -324,7 +356,7 @@ export async function restoreFromGoogleCloud(): Promise<{ success: boolean; erro
           headers: { Authorization: `Bearer ${user.accessToken}` },
         }
       );
-      if (!getRes.ok) throw new Error(`Download failed: ${getRes.statusText}`);
+      if (!getRes.ok) throw await driveError(getRes);
       jsonContent = await getRes.json();
     }
 
@@ -341,7 +373,7 @@ export async function restoreFromGoogleCloud(): Promise<{ success: boolean; erro
 
     return { success: true };
   } catch (err: any) {
-    syncStatusMessage.value = t('auth.restoreFailed') || 'Failed to fetch cloud backup';
+    syncStatusMessage.value = `${t('auth.restoreFailed') || 'Failed to fetch cloud backup'}${err?.message ? `: ${err.message}` : ''}`;
     return { success: false, error: err?.message || 'Failed to restore cloud config' };
   } finally {
     isSyncing.value = false;

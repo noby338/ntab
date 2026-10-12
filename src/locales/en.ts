@@ -183,6 +183,8 @@ export const en = {
     actOpenSettingsDesc: 'Open appearance, layout, and shortcuts settings',
   },
   auth: {
+    drivePermissionRequired: 'Google Drive configuration permission is missing. Sign out, sign in again, and allow NTab to access its own configuration data.',
+    sessionExpired: 'Google session expired. Please sign in again to sync.',
     googleSyncTitle: 'Google Cloud Sync',
     googleSyncDesc: 'Backup layouts and styles to your Google Drive to restore on any device',
     offlineSupported: 'Guest Mode Supported',

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import FolderCard from './FolderCard.vue';
-import { userSettings } from '../services/storage';
 import { activeDropTarget } from '../services/cardDragCoordinator';
 import { t } from '../locales';
 import type { BookmarkItem } from '../types';
@@ -32,19 +31,8 @@ const emit = defineEmits<{
   ): void;
 }>();
 
-const columnWidthStyle = computed(() => {
-  const percent = Math.max(5, Math.min(100, userSettings.value.columnWidth || 25));
-  const gap = userSettings.value.columnGap || 20;
-  // Gap compensation formula: deduction = gap * (1 - percent / 100)
-  // Ensures (100 / percent) columns + gaps exactly fill 100% of the screen container (measured via cqw)
-  const deduction = (gap * (1 - percent / 100)).toFixed(1);
-  const widthExpr = percent >= 100 ? '100%' : `calc(${percent}cqw - ${deduction}px)`;
-
+const cardSpacingStyle = computed(() => {
   return {
-    width: widthExpr,
-    flex: `0 0 ${widthExpr}`,
-    minWidth: '70px',
-    maxWidth: '100%',
     gap: 'clamp(6px, calc(var(--bookmark-row-height, 32px) * 0.4), 14px)',
   };
 });
@@ -53,8 +41,8 @@ const columnWidthStyle = computed(() => {
 <template>
   <div
     :data-column-index="colIndex"
-    class="relative flex flex-col pt-2 transition-[width] duration-150 min-h-0"
-    :style="columnWidthStyle"
+    class="relative flex flex-col pt-2 transition-[width] duration-150 min-h-0 min-w-0 @container"
+    :style="cardSpacingStyle"
   >
     <!-- Full-Height Column Slot Indicator (Left) -->
     <div

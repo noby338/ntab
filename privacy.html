@@ -147,7 +147,7 @@
 
       <div class="header-text">
         <h1>NTab Privacy Policy</h1>
-        <p style="margin:0; font-size: 12px;">Last updated: October 12, 2026</p>
+        <p style="margin:0; font-size: 12px;">Last updated: October 14, 2026</p>
       </div>
 
       <a href="/" class="back-home">← Back to Home</a>
@@ -218,8 +218,8 @@
     </table>
 
     <h2>3. Optional Google Drive Backup</h2>
-    <p>NTab requests the <code>drive.appdata</code> scope to find, create, read, and update its own configuration file in your Google Drive application data folder. This scope does not grant access to your ordinary Drive documents. Signing in may restore an existing configuration. You can also use the backup and restore controls in Settings.</p>
-    <p>The configuration contains preferences, custom search engine definitions, and layout references such as bookmark folder names, identifiers, and paths. It is not a backup of the complete bookmark tree. Google processes this data to provide Drive storage; NTab does not route it through a developer-operated backend.</p>
+    <p>NTab requests the <code>drive.appdata</code> scope to find, create, read, and update its own configuration file in your Google Drive application data folder. This scope does not grant access to your ordinary Drive documents. Signing in checks for an existing configuration but does not apply it. Restore requires your confirmation. You can use manual backup, or enable automatic configuration backup separately for each Google account on each device. While a NTab page is open, automatic backup runs after configuration changes stop for approximately 10 seconds; expired authorization or a cloud-version conflict pauses uploads.</p>
+    <p>Before applying a cloud restore, NTab keeps a local configuration snapshot so you can undo that restore. Automatic-backup preferences, pending configuration changes, version tracking and backup/restore timestamps are stored locally. New cloud backups retain previous configuration versions rather than replacing their contents; these versions remain until you delete NTab application data. The configuration contains preferences, custom search engine definitions, and layout references such as bookmark folder names, identifiers, and paths. It is not a backup of the complete bookmark tree. Google processes this data to provide Drive storage; NTab does not route it through a developer-operated backend.</p>
     <p>Google user data is used only for account display and the backup and restore features described here. It is not sold, used for advertising, or used to train generalized AI models. NTab's use and transfer of information received from Google APIs adheres to the <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">Google API Services User Data Policy</a>, including its Limited Use requirements.</p>
 
     <h2>4. External Services</h2>

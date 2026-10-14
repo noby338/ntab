@@ -8,7 +8,7 @@
 
 | 物料类型 | 本地文件路径 | 规格尺寸 | 强制性 |
 | :--- | :--- | :--- | :--- |
-| **扩展安装包** | `.output/ntab-1.0.4-chrome.zip` | 以本次构建为准 | **必须** |
+| **扩展安装包** | `.output/ntab-1.0.5-chrome.zip` | 以本次构建为准 | **必须** |
 | **应用图标** | `public/icon/128.png` | 128 $\times$ 128 PNG | **必须** |
 | **小尺寸宣传图** | `store-assets/promo-440x280.png` | 440 $\times$ 280 PNG | **必须** |
 | **主屏幕截图 1 (全景)** | `store-assets/screenshot-1-1280x800.png` | 1280 $\times$ 800 PNG | **必须** (至少1张) |
@@ -94,8 +94,8 @@ NTab is an open-source, minimalist new tab extension designed for developers, de
 ✦ KEY FEATURES
 
 1. Responsive Multi-Column Layout
-- Adjust column width with percentage presets (10% to 100%) or fine-tune with a continuous slider.
-- Perfect side-by-side split screen view with zero clipped cards.
+- Non-empty columns automatically share the available width. Drag to create up to 10 columns; empty columns are removed automatically. Adjust horizontal whitespace to control the centered content area.
+- Columns adapt to the available content area; long titles are truncated.
 - Intuitive drag-and-drop to reorder cards, nest folders, or move bookmarks.
 
 2. Smooth Batch Management & Selection
@@ -148,7 +148,7 @@ NTab 是一款专为开发者、设计师与数字生活爱好者打造的开源
 ✦ 核心功能特色
 
 1. 自适应百分比多列排版
-- 支持 10% 到 100% 自由百分比列宽微调，贴合各种分屏与屏幕分辨率。
+- 非空列自动均分宽度，拖动新增列、空列自动移除，最多新增到 10 列；可调横向留白。
 - 无论开几个分列，屏幕两端零多余留白、不挤压、不截断。
 - 支持上下、左右分列自由拖拽排序与卡片独立拆分。
 

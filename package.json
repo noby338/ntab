@@ -2,7 +2,7 @@
   "name": "ntab",
   "description": "NTab - Modern, fast and customizable new tab page with smart bookmark management",
   "private": true,
-  "version": "1.0.4",
+  "version": "1.0.5",
   "type": "module",
   "scripts": {
     "check:google-auth": "node scripts/check-google-auth.mjs",
@@ -13,7 +13,9 @@
     "zip": "wxt zip",
     "zip:firefox": "wxt zip -b firefox",
     "compile": "vue-tsc --noEmit",
-    "postinstall": "wxt prepare"
+    "postinstall": "wxt prepare",
+    "check:columns": "node scripts/check-column-layout.mjs",
+    "check:config-storage": "node scripts/check-config-storage.mjs"
   },
   "dependencies": {
     "@lucide/vue": "^1.48.0",

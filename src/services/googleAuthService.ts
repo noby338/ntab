@@ -1,11 +1,15 @@
-import { ref } from 'vue';
+import { ref, computed, watch, nextTick } from 'vue';
 import {
   buildAdaptiveExportData,
   resolveAdaptiveImportData,
-  saveSettings,
-  saveColumnLayout,
+  applyConfiguration,
+  applySettingsToDOM,
+  DEFAULT_SETTINGS,
+  userSettings,
+  columnLayout,
 } from './storage';
 import { t } from '../locales';
+import type { AdaptiveExportPayload, UserSettings } from '../types';
 
 export interface GoogleUser {
   id: string;
@@ -111,7 +115,7 @@ export async function loginWithGoogle(customClientId?: string): Promise<{ succes
       expiresAt: Date.now() + 3600 * 1000,
     };
     saveSession(mockUser);
-    recordSyncTime();
+    await initializeSignedInBackup(mockUser);
     return { success: true };
   }
 
@@ -194,11 +198,7 @@ export async function loginWithGoogle(customClientId?: string): Promise<{ succes
 
     saveSession(user);
 
-    // Auto-check if remote configuration exists and restore if needed
-    const restored = await restoreFromGoogleCloud();
-    if (!restored.success && restored.code === 'no_backup') {
-      await backupToGoogleCloud();
-    }
+    await initializeSignedInBackup(user);
 
     return { success: true };
   } catch (err: any) {
@@ -206,8 +206,23 @@ export async function loginWithGoogle(customClientId?: string): Promise<{ succes
   }
 }
 
+async function initializeSignedInBackup(user: GoogleUser) {
+  refreshBackupPreferences();
+  const checked = await checkCloudBackup();
+  if (checked.success && automaticBackupEnabled.value && !cloudDecisionRequired.value) {
+    // Explicit re-login resumes the latest local edits, including edits made
+    // after expiry, instead of publishing an older queued snapshot.
+    stagePendingBackup(user);
+    queueAutomaticBackup(false);
+  }
+}
+
 export function logoutGoogle(): void {
   saveSession(null);
+  cancelAutomaticBackup();
+  refreshBackupPreferences();
+  remoteBackup.value = null;
+  cloudDecisionRequired.value = false;
   syncStatusMessage.value = '';
 }
 
@@ -226,156 +241,409 @@ async function driveError(res: Response): Promise<Error> {
   return new Error(`Google Drive (${res.status}${reason ? `, ${reason}` : ''})${message ? `: ${message}` : ''}`);
 }
 
-async function findRemoteConfigFile(token: string): Promise<string | null> {
-  const query = encodeURIComponent(`name = '${CONFIG_FILE_NAME}' and 'appDataFolder' in parents and trashed = false`);
-  const res = await fetch(
-    `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=${query}&fields=files(id,name,modifiedTime)`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
+interface RemoteBackup {
+  id: string;
+  version?: string;
+  modifiedTime?: string;
+  revision: string;
+}
+interface BackupPreferences {
+  automatic: boolean;
+  baseRevision?: string | null;
+  localFingerprint?: string;
+  lastBackup?: string;
+  lastRestore?: string;
+  lastCheck?: number;
+  undo?: { settings: UserSettings; columns: string[][]; at: string };
+}
+interface PendingBackup { payload: AdaptiveExportPayload; fingerprint: string }
+type SyncResult = { success: boolean; error?: string; code?: 'no_backup' | 'conflict' | 'busy' };
+const PREFS_PREFIX = 'ntab_backup_preferences:';
+const PENDING_PREFIX = 'ntab_pending_backup:';
+const preferences = ref<BackupPreferences>({ automatic: false });
+export const automaticBackupEnabled = computed(() => preferences.value.automatic);
+export const lastBackupTime = computed(() => preferences.value.lastBackup || null);
+export const lastRestoreTime = computed(() => preferences.value.lastRestore || null);
+export const canUndoCloudRestore = computed(() => !!preferences.value.undo);
+export const remoteBackup = ref<RemoteBackup | null>(null);
+export const cloudDecisionRequired = ref(false);
+export const cloudCheckComplete = ref(false);
+export const hasUnbackedChanges = computed(() => fingerprint(buildAdaptiveExportData()) !== preferences.value.localFingerprint);
+let automaticTimer: ReturnType<typeof setTimeout> | null = null;
+let applyingRestore = false;
+let controllerStarted = false;
 
+function stable(value: any): any {
+  if (Array.isArray(value)) return value.map(stable);
+  if (value && typeof value === 'object') return Object.fromEntries(Object.keys(value).sort().map(key => [key, stable(value[key])]));
+  return value;
+}
+function fingerprint(payload: AdaptiveExportPayload): string {
+  const { columnWidth: _legacyWidth, ...settings } = payload.settings;
+  return JSON.stringify(stable({ settings, layout: payload.layout }));
+}
+function accountKey(user: GoogleUser): string { return encodeURIComponent(user.id || user.email); }
+function readPreferences(user = currentGoogleUser.value): BackupPreferences {
+  if (!user) return { automatic: false };
+  try { return { automatic: false, ...JSON.parse(localStorage.getItem(PREFS_PREFIX + accountKey(user)) || '{}') }; }
+  catch { return { automatic: false }; }
+}
+function refreshBackupPreferences() { preferences.value = readPreferences(); }
+function updatePreferences(user: GoogleUser, patch: Partial<BackupPreferences>) {
+  const value = { ...readPreferences(user), ...patch };
+  localStorage.setItem(PREFS_PREFIX + accountKey(user), JSON.stringify(value));
+  if (currentGoogleUser.value && accountKey(currentGoogleUser.value) === accountKey(user)) preferences.value = value;
+}
+function validUser(): GoogleUser {
+  const user = currentGoogleUser.value;
+  if (!user) throw new Error(t('auth.signInRequired'));
+  if (user.expiresAt <= Date.now()) {
+    saveSession(null);
+    cancelAutomaticBackup();
+    throw new Error(t('auth.sessionExpired'));
+  }
+  const cached = loadCachedUser();
+  if (!cached || accountKey(cached) !== accountKey(user)) throw new Error(t('auth.accountChanged'));
+  return user;
+}
+function stillSameAccount(user: GoogleUser) {
+  const cached = loadCachedUser();
+  if (!cached || accountKey(cached) !== accountKey(user)) throw new Error(t('auth.accountChanged'));
+}
+async function withAccountLock<T>(user: GoogleUser, action: () => Promise<T>): Promise<T> {
+  if (typeof navigator === 'undefined' || !navigator.locks) throw new Error(t('auth.lockUnavailable'));
+  return navigator.locks.request(`ntab-cloud:${accountKey(user)}`, action);
+}
+function revision(file: { id: string; version?: string; modifiedTime?: string }): string {
+  return `${file.id}:${file.version || file.modifiedTime || 'legacy'}`;
+}
+async function findRemoteBackup(user: GoogleUser): Promise<RemoteBackup | null> {
+  if (!isRealExtension) {
+    const raw = localStorage.getItem('mock_google_drive_config');
+    if (!raw) return null;
+    const payload = JSON.parse(raw);
+    return { id: 'mock', revision: payload.syncRevision || raw, modifiedTime: payload.exportedAt };
+  }
+  const query = encodeURIComponent(`name = '${CONFIG_FILE_NAME}' and 'appDataFolder' in parents and trashed = false`);
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=${query}&orderBy=modifiedTime%20desc&pageSize=100&fields=files(id,version,modifiedTime)`, {
+    headers: { Authorization: `Bearer ${user.accessToken}` },
+  });
   if (!res.ok) throw await driveError(res);
   const data = await res.json();
-  const file = data.files?.[0];
-  return file?.id || null;
+  const files = (data.files || []).filter((file: any) => typeof file.id === 'string');
+  files.sort((a: any, b: any) => (b.modifiedTime || '').localeCompare(a.modifiedTime || '') || b.id.localeCompare(a.id));
+  const file = files[0];
+  return file ? { ...file, revision: revision(file) } : null;
+}
+function validatePayload(data: any): AdaptiveExportPayload {
+  const settings = data?.settings || (typeof data?.theme === 'string' ? data : null);
+  const layout = data?.layout || data?.columns;
+  const validEntry = (entry: any) => typeof entry === 'string' || (entry && typeof entry === 'object' &&
+    [entry.id, entry.rootId, entry.specialId, entry.title, entry.path].some(value => typeof value === 'string'));
+  if (!settings || typeof settings !== 'object' || Array.isArray(settings) ||
+      !Array.isArray(layout) || !layout.every((col: any) => Array.isArray(col) && col.every(validEntry))) {
+    throw new Error(t('auth.invalidCloudConfig'));
+  }
+  return { ...data, settings, layout };
 }
 
-export async function backupToGoogleCloud(): Promise<{ success: boolean; error?: string }> {
-  const user = currentGoogleUser.value;
-  if (!user) return { success: false, error: 'Not logged in' };
-  if (isRealExtension && user.expiresAt <= Date.now()) {
-    saveSession(null);
-    syncStatusMessage.value = t('auth.sessionExpired');
-    return { success: false, error: syncStatusMessage.value };
-  }
-
-  isSyncing.value = true;
-  syncStatusMessage.value = t('auth.syncingBackup') || 'Uploading backup to Google Drive...';
-
-  try {
-    const payload = buildAdaptiveExportData();
-    const jsonString = JSON.stringify(payload);
-
-    if (!isRealExtension) {
-      localStorage.setItem('mock_google_drive_config', jsonString);
-      recordSyncTime();
-      syncStatusMessage.value = t('auth.synced') || 'Synced to Google Drive';
-      return { success: true };
-    }
-
-    const fileId = await findRemoteConfigFile(user.accessToken);
-
-    if (fileId) {
-      // Update existing file via PATCH
-      const updateRes = await fetch(
-        `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`,
-        {
-          method: 'PATCH',
-          headers: {
-            Authorization: `Bearer ${user.accessToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: jsonString,
-        }
-      );
-      if (!updateRes.ok) throw await driveError(updateRes);
-    } else {
-      // Create new file in AppData via multipart POST
-      const boundary = '-------314159265358979323846';
-      const delimiter = `\r\n--${boundary}\r\n`;
-      const closeDelim = `\r\n--${boundary}--`;
-
-      const metadata = {
-        name: CONFIG_FILE_NAME,
-        parents: ['appDataFolder'],
-      };
-
-      const multipartRequestBody =
-        delimiter +
-        'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
-        JSON.stringify(metadata) +
-        delimiter +
-        'Content-Type: application/json\r\n\r\n' +
-        jsonString +
-        closeDelim;
-
-      const createRes = await fetch(
-        'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${user.accessToken}`,
-            'Content-Type': `multipart/related; boundary=${boundary}`,
-          },
-          body: multipartRequestBody,
-        }
-      );
-      if (!createRes.ok) throw await driveError(createRes);
-    }
-
-    recordSyncTime();
-    syncStatusMessage.value = t('auth.backupSuccess') || 'Settings safely backed up to Google Drive';
-    return { success: true };
-  } catch (err: any) {
-    syncStatusMessage.value = `${t('auth.backupFailed') || 'Cloud backup failed'}${err?.message ? `: ${err.message}` : ''}`;
-    return { success: false, error: err?.message || 'Cloud backup failed' };
-  } finally {
-    isSyncing.value = false;
-  }
+async function downloadBackup(user: GoogleUser, file: RemoteBackup): Promise<AdaptiveExportPayload> {
+  if (!isRealExtension) return validatePayload(JSON.parse(localStorage.getItem('mock_google_drive_config') || 'null'));
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`, {
+    headers: { Authorization: `Bearer ${user.accessToken}` },
+  });
+  if (!res.ok) throw await driveError(res);
+  return validatePayload(await res.json());
+}
+function markCloudChoice(file: RemoteBackup | null) {
+  remoteBackup.value = file;
+  cloudDecisionRequired.value = true;
+  syncStatusMessage.value = t(file ? 'auth.cloudChoiceRequired' : 'auth.cloudMissingChoice');
+  cancelAutomaticBackup();
 }
 
-export async function restoreFromGoogleCloud(): Promise<{ success: boolean; error?: string; code?: 'no_backup' }> {
-  const user = currentGoogleUser.value;
-  if (!user) return { success: false, error: 'Not logged in' };
-  if (isRealExtension && user.expiresAt <= Date.now()) {
-    saveSession(null);
-    syncStatusMessage.value = t('auth.sessionExpired');
-    return { success: false, error: syncStatusMessage.value };
-  }
-
+// Checking never applies settings and never creates a backup implicitly.
+export async function checkCloudBackup(): Promise<SyncResult> {
+  if (isSyncing.value) return { success: false, code: 'busy' };
   isSyncing.value = true;
-  syncStatusMessage.value = t('auth.pullingBackup') || 'Pulling settings from Google Drive...';
-
+  cloudCheckComplete.value = false;
   try {
-    let jsonContent: any = null;
-
-    if (!isRealExtension) {
-      const raw = localStorage.getItem('mock_google_drive_config');
-      if (raw) jsonContent = JSON.parse(raw);
-    } else {
-      const fileId = await findRemoteConfigFile(user.accessToken);
-      if (!fileId) {
-        syncStatusMessage.value = 'No cloud backup found for this account';
-        return { success: false, error: syncStatusMessage.value, code: 'no_backup' };
+    const user = validUser();
+    return await withAccountLock(user, async () => {
+      const file = await findRemoteBackup(user);
+      stillSameAccount(user);
+      remoteBackup.value = file;
+      const prefs = readPreferences(user);
+      updatePreferences(user, { lastCheck: Date.now() });
+      if (file && file.revision !== prefs.baseRevision) {
+        const payload = await downloadBackup(user, file);
+        stillSameAccount(user);
+        if (fingerprint(payload) === fingerprint(buildAdaptiveExportData())) {
+          updatePreferences(user, { baseRevision: file.revision, localFingerprint: fingerprint(buildAdaptiveExportData()) });
+          cloudDecisionRequired.value = false;
+          syncStatusMessage.value = t('auth.synced');
+        } else markCloudChoice(file);
+      } else if (!file && prefs.baseRevision) {
+        markCloudChoice(null);
+      } else {
+        cloudDecisionRequired.value = false;
+        syncStatusMessage.value = t(file ? (hasUnbackedChanges.value ? 'auth.pendingChanges' : 'auth.synced') : 'auth.noCloudBackup');
       }
-
-      const getRes = await fetch(
-        `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
-        {
-          headers: { Authorization: `Bearer ${user.accessToken}` },
-        }
-      );
-      if (!getRes.ok) throw await driveError(getRes);
-      jsonContent = await getRes.json();
-    }
-
-    if (!jsonContent) {
-      return { success: false, error: 'Cloud backup is empty' };
-    }
-
-    // Apply restored configuration into NTab
-    const { settings, columns } = resolveAdaptiveImportData(jsonContent);
-    saveSettings(settings);
-    saveColumnLayout({ columns });
-    recordSyncTime();
-    syncStatusMessage.value = t('auth.restoreSuccess') || 'Settings successfully restored from cloud';
-
-    return { success: true };
+      cloudCheckComplete.value = true;
+      return { success: true };
+    });
   } catch (err: any) {
-    syncStatusMessage.value = `${t('auth.restoreFailed') || 'Failed to fetch cloud backup'}${err?.message ? `: ${err.message}` : ''}`;
-    return { success: false, error: err?.message || 'Failed to restore cloud config' };
+    cloudDecisionRequired.value = true;
+    syncStatusMessage.value = `${t('auth.checkFailed')}: ${err.message}`;
+    return { success: false, error: err.message };
+  } finally { isSyncing.value = false; }
+}
+
+// New backups are immutable files. A simultaneous upload can change which
+// version is newest, but cannot destroy the other device's configuration.
+async function uploadBackup(user: GoogleUser, payload: AdaptiveExportPayload): Promise<RemoteBackup> {
+  const exported = { ...payload, exportedAt: new Date().toISOString(), syncRevision: crypto.randomUUID() };
+  if (!isRealExtension) {
+    localStorage.setItem('mock_google_drive_config', JSON.stringify(exported));
+    return { id: 'mock', revision: exported.syncRevision, modifiedTime: exported.exportedAt };
+  }
+  const boundary = `ntab_${crypto.randomUUID()}`;
+  const body = `\r\n--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n` +
+    JSON.stringify({ name: CONFIG_FILE_NAME, parents: ['appDataFolder'] }) +
+    `\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n` + JSON.stringify(exported) + `\r\n--${boundary}--`;
+  const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,version,modifiedTime', {
+    method: 'POST', headers: { Authorization: `Bearer ${user.accessToken}`, 'Content-Type': `multipart/related; boundary=${boundary}` }, body,
+  });
+  if (!res.ok) throw await driveError(res);
+  const file = await res.json();
+  if (!file?.id) throw new Error(t('auth.invalidCloudConfig'));
+  return { ...file, revision: revision(file) };
+}
+
+export async function backupToGoogleCloud(options: { automatic?: boolean; confirmedRevision?: string | null } = {}): Promise<SyncResult> {
+  if (isSyncing.value) return { success: false, code: 'busy' };
+  isSyncing.value = true;
+  syncStatusMessage.value = t('auth.syncingBackup');
+  try {
+    const user = validUser();
+    return await withAccountLock(user, async () => {
+      const prefs = readPreferences(user);
+      if (options.automatic && !prefs.automatic) return { success: false };
+      const pendingRaw = localStorage.getItem(PENDING_PREFIX + accountKey(user));
+      if (options.automatic && !pendingRaw) return { success: true };
+      const pending: PendingBackup = options.automatic && pendingRaw ? JSON.parse(pendingRaw) : stagePendingBackup(user);
+      if (options.automatic && pending.fingerprint === prefs.localFingerprint) {
+        syncStatusMessage.value = t('auth.synced');
+        return { success: true };
+      }
+      const file = await findRemoteBackup(user);
+      stillSameAccount(user);
+      const actualRevision = file?.revision || null;
+      const expectedRevision = options.confirmedRevision !== undefined ? options.confirmedRevision : prefs.baseRevision ?? null;
+      if (actualRevision !== expectedRevision) {
+        markCloudChoice(file);
+        return { success: false, code: 'conflict', error: syncStatusMessage.value };
+      }
+      const freshPrefs = readPreferences(user);
+      if (options.automatic && !freshPrefs.automatic) return { success: false };
+      // Read again after network I/O so a newer edit in another tab is included.
+      const latestPending: PendingBackup = options.automatic
+        ? JSON.parse(localStorage.getItem(PENDING_PREFIX + accountKey(user)) || JSON.stringify(pending))
+        : pending;
+      stillSameAccount(user);
+      const uploaded = await uploadBackup(user, latestPending.payload);
+      updatePreferences(user, { baseRevision: uploaded.revision, localFingerprint: latestPending.fingerprint, lastBackup: new Date().toLocaleString() });
+      const latest = await findRemoteBackup(user);
+      stillSameAccount(user);
+      recordSyncTime();
+      cloudCheckComplete.value = true;
+      if (latest && latest.revision !== uploaded.revision) {
+        markCloudChoice(latest);
+        return { success: false, code: 'conflict', error: syncStatusMessage.value };
+      }
+      remoteBackup.value = uploaded;
+      cloudDecisionRequired.value = false;
+      syncStatusMessage.value = t('auth.backupSuccess');
+      return { success: true };
+    });
+  } catch (err: any) {
+    syncStatusMessage.value = `${t('auth.backupFailed')}: ${err.message}`;
+    return { success: false, error: err.message };
   } finally {
     isSyncing.value = false;
+    if (options.automatic && automaticBackupEnabled.value && !cloudDecisionRequired.value && hasUnbackedChanges.value && currentGoogleUser.value) {
+      // Do not continually retry network errors; a new edit/online event resumes.
+      if (syncStatusMessage.value === t('auth.backupSuccess')) queueAutomaticBackup(false);
+    }
   }
+}
+
+export async function restoreFromGoogleCloud(confirmedRevision?: string): Promise<SyncResult> {
+  if (!confirmedRevision) return { success: false, error: t('auth.restoreConfirmationRequired') };
+  if (isSyncing.value) return { success: false, code: 'busy' };
+  isSyncing.value = true;
+  cancelAutomaticBackup();
+  syncStatusMessage.value = t('auth.pullingBackup');
+  try {
+    const user = validUser();
+    return await withAccountLock(user, async () => {
+      const file = await findRemoteBackup(user);
+      if (!file) return { success: false, code: 'no_backup', error: t('auth.noCloudBackup') };
+      if (file.revision !== confirmedRevision) {
+        markCloudChoice(file);
+        return { success: false, code: 'conflict', error: syncStatusMessage.value };
+      }
+      const payload = await downloadBackup(user, file);
+      const latest = await findRemoteBackup(user);
+      stillSameAccount(user);
+      if (latest?.revision !== file.revision) {
+        markCloudChoice(latest);
+        return { success: false, code: 'conflict', error: syncStatusMessage.value };
+      }
+      // Save exact local IDs for undo rather than matching a portable export.
+      updatePreferences(user, { undo: { settings: JSON.parse(JSON.stringify(userSettings.value)), columns: JSON.parse(JSON.stringify(columnLayout.value.columns)), at: new Date().toISOString() } });
+      const { settings, columns } = resolveAdaptiveImportData(payload);
+      applyingRestore = true;
+      try {
+        await applyConfiguration(settings, columns);
+        await nextTick();
+      } finally { applyingRestore = false; }
+      updatePreferences(user, { baseRevision: file.revision, localFingerprint: fingerprint(buildAdaptiveExportData()), lastRestore: new Date().toLocaleString() });
+      localStorage.removeItem(PENDING_PREFIX + accountKey(user));
+      remoteBackup.value = file;
+      cloudDecisionRequired.value = false;
+      cloudCheckComplete.value = true;
+      recordSyncTime();
+      syncStatusMessage.value = t('auth.restoreSuccess');
+      return { success: true };
+    });
+  } catch (err: any) {
+    syncStatusMessage.value = `${t('auth.restoreFailed')}: ${err.message}`;
+    return { success: false, error: err.message };
+  } finally { isSyncing.value = false; }
+}
+
+export async function undoCloudRestore(): Promise<SyncResult> {
+  if (isSyncing.value) return { success: false, code: 'busy' };
+  const user = currentGoogleUser.value;
+  if (!user) return { success: false };
+  cancelAutomaticBackup();
+  isSyncing.value = true;
+  try {
+    return await withAccountLock(user, async () => {
+      const snapshot = readPreferences(user).undo;
+      if (!snapshot) return { success: false };
+      // Undo is local-only; pause automatic backup to avoid publishing the undo.
+      updatePreferences(user, { automatic: false });
+      applyingRestore = true;
+      try {
+        await applyConfiguration(snapshot.settings, snapshot.columns);
+        await nextTick();
+      } finally { applyingRestore = false; }
+      updatePreferences(user, { undo: undefined });
+      stagePendingBackup(user);
+      syncStatusMessage.value = t('auth.undoRestoreSuccess');
+      return { success: true };
+    });
+  } catch (err: any) { syncStatusMessage.value = err.message; return { success: false, error: err.message }; }
+  finally { isSyncing.value = false; }
+}
+
+function stagePendingBackup(user: GoogleUser): PendingBackup {
+  const payload = buildAdaptiveExportData();
+  const pending = { payload, fingerprint: fingerprint(payload) };
+  localStorage.setItem(PENDING_PREFIX + accountKey(user), JSON.stringify(pending));
+  return pending;
+}
+function cancelAutomaticBackup() {
+  if (automaticTimer) clearTimeout(automaticTimer);
+  automaticTimer = null;
+}
+function queueAutomaticBackup(stage = true) {
+  cancelAutomaticBackup();
+  const user = currentGoogleUser.value;
+  if (!user || !automaticBackupEnabled.value || cloudDecisionRequired.value || !cloudCheckComplete.value) return;
+  const existing = localStorage.getItem(PENDING_PREFIX + accountKey(user));
+  const pending: PendingBackup = stage || !existing ? stagePendingBackup(user) : JSON.parse(existing);
+  if (pending.fingerprint === readPreferences(user).localFingerprint) return;
+  const account = accountKey(user);
+  automaticTimer = setTimeout(() => {
+    automaticTimer = null;
+    if (currentGoogleUser.value && accountKey(currentGoogleUser.value) === account) void backupToGoogleCloud({ automatic: true });
+  }, 10_000);
+}
+export async function setAutomaticBackup(enabled: boolean) {
+  const user = currentGoogleUser.value;
+  if (!user) return;
+  updatePreferences(user, { automatic: enabled });
+  cancelAutomaticBackup();
+  if (enabled) {
+    const checked = await checkCloudBackup();
+    if (checked.success && !cloudDecisionRequired.value) queueAutomaticBackup(false);
+  }
+}
+
+// Runs while a NTab page is open; pending edits persist across page closure.
+export function startCloudBackupController(): () => void {
+  if (controllerStarted || typeof window === 'undefined') return () => {};
+  controllerStarted = true;
+  cancelAutomaticBackup();
+  refreshBackupPreferences();
+  const stopWatch = watch(() => fingerprint(buildAdaptiveExportData()), () => {
+    if (applyingRestore) return;
+    const user = currentGoogleUser.value;
+    if (user) stagePendingBackup(user);
+    if (user && !isSyncing.value && !cloudDecisionRequired.value) {
+      syncStatusMessage.value = t(hasUnbackedChanges.value ? 'auth.pendingChanges' : 'auth.synced');
+    }
+    queueAutomaticBackup(false);
+  }, { flush: 'post' });
+  const checkAndResume = async (force = false) => {
+    refreshBackupPreferences();
+    const user = currentGoogleUser.value;
+    if (!user || isSyncing.value) return;
+    if (!force && (!automaticBackupEnabled.value || Date.now() - (readPreferences(user).lastCheck || 0) < 55_000)) return;
+    const result = await checkCloudBackup();
+    if (result.success && automaticBackupEnabled.value && !cloudDecisionRequired.value) queueAutomaticBackup(false);
+  };
+  const onStorage = async (event: StorageEvent) => {
+    if (event.key === STORAGE_KEY_USER) {
+      cancelAutomaticBackup();
+      currentGoogleUser.value = loadCachedUser();
+      refreshBackupPreferences();
+      cloudCheckComplete.value = false;
+      cloudDecisionRequired.value = true;
+    } else if (event.key?.startsWith(PREFS_PREFIX)) {
+      const previousSnapshot = preferences.value.undo?.at;
+      refreshBackupPreferences();
+      if (!automaticBackupEnabled.value || preferences.value.undo?.at !== previousSnapshot) cancelAutomaticBackup();
+    }
+    else if (event.newValue && (event.key === 'ntab_settings' || event.key === 'ntab_columns')) {
+      try {
+        const value = JSON.parse(event.newValue);
+        applyingRestore = true;
+        if (event.key === 'ntab_settings' && value && !Array.isArray(value)) {
+          userSettings.value = { ...DEFAULT_SETTINGS, ...value };
+          applySettingsToDOM(userSettings.value);
+        } else if (event.key === 'ntab_columns' && Array.isArray(value)) {
+          columnLayout.value = { columns: value.filter(col => Array.isArray(col) && col.length > 0) };
+        }
+        await nextTick();
+      } catch { /* Ignore malformed local cache events. */ }
+      finally { applyingRestore = false; }
+    }
+  };
+  const onOnline = () => { void checkAndResume(true); };
+  window.addEventListener('storage', onStorage);
+  window.addEventListener('online', onOnline);
+  const poll = setInterval(() => { void checkAndResume(); }, 60_000);
+  void checkAndResume(true);
+  return () => {
+    controllerStarted = false;
+    stopWatch();
+    clearInterval(poll);
+    cancelAutomaticBackup();
+    window.removeEventListener('storage', onStorage);
+    window.removeEventListener('online', onOnline);
+  };
 }

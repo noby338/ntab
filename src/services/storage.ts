@@ -10,7 +10,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   rowHeight: 32,
   hoverDuration: 75,
   columnGap: 20,
-  columnWidth: 25,
+  horizontalWhitespace: 0,
   columnAlign: 'center',
   cardRadius: 16,
   backdropBlur: 16,
@@ -424,7 +424,6 @@ export function applySettingsToDOM(settings: UserSettings): void {
   root.style.setProperty('--bookmark-font-size', `${settings.fontSize}px`);
   root.style.setProperty('--bookmark-row-height', `${settings.rowHeight}px`);
   root.style.setProperty('--hover-duration', `${settings.hoverDuration}ms`);
-  root.style.setProperty('--column-width', `${settings.columnWidth}%`);
   root.style.setProperty('--column-gap', `${settings.columnGap}px`);
 
   if (settings.cardRadius !== undefined) {
@@ -486,6 +485,41 @@ export async function saveSettings(settings: Partial<UserSettings>, immediate = 
         }
       }, 250);
     }
+  }
+}
+
+// Apply a confirmed restore as one browser-storage write. If persistence fails,
+// keep both the previous settings and layout, rather than reporting a partial restore.
+export async function applyConfiguration(settings: UserSettings, columns: string[][]): Promise<void> {
+  const oldSettings = JSON.parse(JSON.stringify(userSettings.value));
+  const oldColumns = JSON.parse(JSON.stringify(columnLayout.value.columns));
+  const nextSettings = JSON.parse(JSON.stringify(settings));
+  const nextColumns = columns.filter(col => col.length > 0).map(col => [...col]);
+  if (saveSettingsTimer) clearTimeout(saveSettingsTimer);
+  saveSettingsTimer = null;
+  let browserWriteCompleted = false;
+  try {
+    if (isChromeStorage && chrome.storage.sync) {
+      await chrome.storage.sync.set({ ntab_settings: nextSettings, ntab_columns: nextColumns });
+      browserWriteCompleted = true;
+    }
+    localStorage.setItem('ntab_settings', JSON.stringify(nextSettings));
+    localStorage.setItem('ntab_columns', JSON.stringify(nextColumns));
+    userSettings.value = nextSettings;
+    columnLayout.value = { columns: nextColumns };
+    applySettingsToDOM(nextSettings);
+  } catch (error) {
+    if (browserWriteCompleted && isChromeStorage && chrome.storage.sync) {
+      try { await chrome.storage.sync.set({ ntab_settings: oldSettings, ntab_columns: oldColumns }); } catch {}
+    }
+    try {
+      localStorage.setItem('ntab_settings', JSON.stringify(oldSettings));
+      localStorage.setItem('ntab_columns', JSON.stringify(oldColumns));
+    } catch {}
+    userSettings.value = oldSettings;
+    columnLayout.value = { columns: oldColumns };
+    applySettingsToDOM(oldSettings);
+    throw error;
   }
 }
 
@@ -611,7 +645,7 @@ export async function loadColumnLayout(
       }
     }
 
-    columnLayout.value = { columns: sanitized };
+    columnLayout.value = { columns: sanitized.filter(col => col.length > 0) };
   } else {
     // Generate fresh default layout
     const cols: string[][] = [];
@@ -639,8 +673,10 @@ export async function loadColumnLayout(
 
 // Save column layout
 export async function saveColumnLayout(layout: ColumnLayout): Promise<void> {
-  columnLayout.value = { columns: layout.columns };
-  const plain = JSON.parse(JSON.stringify(layout.columns));
+  const nonEmptyColumns = layout.columns.filter(col => col.length > 0);
+  columnLayout.value = { columns: nonEmptyColumns };
+  const plain = JSON.parse(JSON.stringify(nonEmptyColumns));
+  try { localStorage.setItem('ntab_columns', JSON.stringify(plain)); } catch {}
 
   if (isChromeStorage && chrome.storage.sync) {
     try {

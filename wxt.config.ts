@@ -1,5 +1,6 @@
 import { defineConfig } from 'wxt';
 import tailwindcss from '@tailwindcss/vite';
+import packageMetadata from './package.json';
 
 // See https://wxt.dev/api/config.html
 export default defineConfig({
@@ -12,7 +13,7 @@ export default defineConfig({
     name: 'NTab',
     short_name: 'NTab',
     description: 'Modern, fast and customizable new tab page with smart bookmark management',
-    version: '1.0.4',
+    version: packageMetadata.version,
     permissions: [
       'bookmarks',
       'favicon',

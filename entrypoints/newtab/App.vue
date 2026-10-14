@@ -34,7 +34,7 @@ import ContextMenu from '../../src/components/ContextMenu.vue';
 import CreateFolderModal from '../../src/components/CreateFolderModal.vue';
 import ConfirmDeleteModal from '../../src/components/ConfirmDeleteModal.vue';
 import SearchEngineIcon from '../../src/components/SearchEngineIcon.vue';
-import { currentGoogleUser, loginWithGoogle } from '../../src/services/googleAuthService';
+import { currentGoogleUser, loginWithGoogle, startCloudBackupController, cloudDecisionRequired } from '../../src/services/googleAuthService';
 import { initGlobalDragScroll, isGlobalDragging, globalDragType, endGlobalDrag } from '../../src/services/dragScroll';
 import {
   activeDropTarget,
@@ -46,10 +46,27 @@ import {
 import { setBatchSelectHandler } from '../../src/services/batchSelectionCoordinator';
 import { t, activeLanguage } from '../../src/locales';
 import { getActiveShortcut, matchesShortcut } from '../../src/services/hotkeyService';
+import { moveLayoutCard } from '../../src/services/columnLayoutMovement';
 import type { BookmarkItem } from '../../src/types';
 
 // State
 const isBatchMode = ref(false);
+let stopCloudBackupController: (() => void) | null = null;
+const columnNotice = ref('');
+let columnNoticeTimer: ReturnType<typeof setTimeout> | null = null;
+let notifiedColumnDrag: typeof activeDragCardInfo.value = null;
+
+function clearColumnNotice() {
+  if (columnNoticeTimer) clearTimeout(columnNoticeTimer);
+  columnNoticeTimer = null;
+  columnNotice.value = '';
+}
+
+function showColumnLimitNotice() {
+  clearColumnNotice();
+  columnNotice.value = t('settings.columnLimitReached');
+  columnNoticeTimer = setTimeout(clearColumnNotice, 3000);
+}
 const isCornerActive = ref(false);
 const isButtonsHovered = ref(false);
 let cornerCloseTimer: ReturnType<typeof setTimeout> | null = null;
@@ -266,71 +283,35 @@ function handleMoveFolder(payload: {
   direction?: 'before' | 'after' | 'left' | 'right' | 'slot' | 'card_slot';
   slotIndex?: number;
 }) {
-  const cols = [...columnLayout.value.columns.map((c) => [...c])];
   const { fromCol, fromRow, toCol, toRow, direction, slotIndex } = payload;
-
-  const sourceCol = cols[fromCol];
-  if (!sourceCol || !sourceCol[fromRow]) return;
-
-  const movedId = sourceCol.splice(fromRow, 1)[0];
-  if (!movedId) return;
-
-  if (direction === 'slot' && slotIndex !== undefined) {
-    const hadEmptySource = sourceCol.length === 0;
-    const cleanCols = cols.filter((c) => c.length > 0);
-    let targetSlot = slotIndex;
-    if (hadEmptySource && fromCol < slotIndex) {
-      targetSlot = Math.max(0, slotIndex - 1);
-    }
-    cleanCols.splice(targetSlot, 0, [movedId]);
-    saveColumnLayout({ columns: cleanCols.length > 0 ? cleanCols : [[movedId]] });
+  const cardId = displayedColumns.value[fromCol]?.[fromRow];
+  if (!cardId) return;
+  const target = direction === 'slot' || direction === 'left' || direction === 'right'
+    ? { type: 'column_slot' as const, slotIndex: direction === 'slot' ? slotIndex ?? toCol : toCol + (direction === 'right' ? 1 : 0) }
+    : { type: 'card_slot' as const, colIndex: toCol, slotIndex: direction === 'card_slot' ? slotIndex ?? toRow : toRow + (direction === 'after' ? 1 : 0) };
+  const columns = moveLayoutCard(columnLayout.value.columns, displayedColumns.value, cardId, target);
+  if (!columns) {
+    showColumnLimitNotice();
     return;
   }
-
-  if (direction === 'card_slot' && slotIndex !== undefined) {
-    if (fromCol === toCol) {
-      let insertIdx = slotIndex;
-      if (fromRow < slotIndex) {
-        insertIdx = Math.max(0, slotIndex - 1);
-      }
-      sourceCol.splice(insertIdx, 0, movedId);
-    } else {
-      const targetCol = cols[toCol] || [];
-      if (!cols[toCol]) cols[toCol] = targetCol;
-      targetCol.splice(slotIndex, 0, movedId);
-    }
-    const cleanCols = cols.filter((c) => c.length > 0);
-    saveColumnLayout({ columns: cleanCols.length > 0 ? cleanCols : [[movedId]] });
-    return;
-  }
-
-  if (direction === 'left') {
-    cols.splice(toCol, 0, [movedId]);
-  } else if (direction === 'right') {
-    cols.splice(toCol + 1, 0, [movedId]);
-  } else {
-    const targetCol = cols[toCol] || [];
-    if (!cols[toCol]) cols[toCol] = targetCol;
-
-    let insertIndex = toRow;
-    if (direction === 'after') {
-      insertIndex = Math.min(toRow + 1, targetCol.length);
-    }
-    targetCol.splice(insertIndex, 0, movedId);
-  }
-
-  const cleaned = cols.filter((c) => c.length > 0);
-  saveColumnLayout({ columns: cleaned.length > 0 ? cleaned : [[movedId]] });
+  clearColumnNotice();
+  saveColumnLayout({ columns });
 }
 
 function handleMainDragOver(event: DragEvent) {
   if (globalDragType.value !== 'folder_card' && globalDragType.value !== 'folder') return;
   event.preventDefault();
   if (!event.dataTransfer) return;
-  event.dataTransfer.dropEffect = 'move';
-
   const target = resolveDropTarget(event.clientX, event.clientY);
-  activeDropTarget.value = target;
+  const dragged = activeDragCardInfo.value;
+  const allowed = !target || target.type === 'folder_nest' || !dragged ||
+    moveLayoutCard(columnLayout.value.columns, displayedColumns.value, dragged.id, target) !== null;
+  event.dataTransfer.dropEffect = allowed ? 'move' : 'none';
+  if (!allowed && dragged && notifiedColumnDrag !== dragged) {
+    notifiedColumnDrag = dragged;
+    showColumnLimitNotice();
+  }
+  activeDropTarget.value = allowed ? target : null;
 }
 
 function handleMainDragLeave(event: DragEvent) {
@@ -350,11 +331,10 @@ async function handleMainDrop(event: DragEvent) {
 
   if (!target || !dragged) return;
 
-  await executeCardDrop(dragged.id, target);
+  await executeCardDrop(dragged.id, target, dragged.fromCol === -1);
 }
 
-async function executeCardDrop(cardId: string, target: DropTarget) {
-  const isFromNestedFolder = activeDragCardInfo.value?.fromCol === -1;
+async function executeCardDrop(cardId: string, target: DropTarget, isFromNestedFolder = false) {
 
   if (target.type === 'folder_nest') {
     const ok = await moveBookmark(cardId, target.folderId);
@@ -365,63 +345,14 @@ async function executeCardDrop(cardId: string, target: DropTarget) {
     return;
   }
 
-  const cols = columnLayout.value.columns.map((c) => [...c]);
-
-  for (let c = 0; c < cols.length; c++) {
-    const col = cols[c];
-    if (!col) continue;
-    const r = col.indexOf(cardId);
-    if (r !== -1) {
-      col.splice(r, 1);
-      break;
-    }
+  const columns = moveLayoutCard(columnLayout.value.columns, displayedColumns.value, cardId, target);
+  if (!columns) {
+    showColumnLimitNotice();
+    return;
   }
-
-  const dispCols = displayedColumns.value;
-
-  if (target.type === 'column_slot') {
-    let insertColIndex = cols.length;
-    if (target.slotIndex === 0) {
-      insertColIndex = 0;
-    } else if (target.slotIndex >= dispCols.length) {
-      insertColIndex = cols.length;
-    } else {
-      const refFolderId = dispCols[target.slotIndex]?.[0];
-      if (refFolderId) {
-        const foundIdx = cols.findIndex((col) => col.includes(refFolderId));
-        insertColIndex = foundIdx !== -1 ? foundIdx : target.slotIndex;
-      } else {
-        insertColIndex = target.slotIndex;
-      }
-    }
-
-    cols.splice(insertColIndex, 0, [cardId]);
-  } else if (target.type === 'card_slot') {
-    const refCol = dispCols[target.colIndex];
-    let realColIndex = -1;
-    if (refCol && refCol.length > 0) {
-      const anchorId = refCol[0];
-      if (anchorId) {
-        realColIndex = cols.findIndex((col) => col.includes(anchorId));
-      }
-    }
-    if (realColIndex === -1) {
-      realColIndex = Math.min(target.colIndex, cols.length);
-    }
-
-    const targetCol = cols[realColIndex] || [];
-    if (!cols[realColIndex]) cols[realColIndex] = targetCol;
-
-    const boundedSlot = Math.min(target.slotIndex, targetCol.length);
-    targetCol.splice(boundedSlot, 0, cardId);
-  }
-
-  if (isFromNestedFolder) {
-    await moveBookmark(cardId, '2');
-  }
-
-  const cleanCols = cols.filter((c) => c.length > 0);
-  await saveColumnLayout({ columns: cleanCols.length > 0 ? cleanCols : [[cardId]] });
+  if (isFromNestedFolder && !(await moveBookmark(cardId, '2'))) return;
+  clearColumnNotice();
+  await saveColumnLayout({ columns });
   await loadBookmarks();
 }
 
@@ -456,6 +387,19 @@ const displayedColumns = computed(() => {
       });
     })
     .filter((col) => col.length > 0);
+});
+
+const columnsGridStyle = computed(() => {
+  const raw = Number(userSettings.value.horizontalWhitespace ?? 0);
+  const whitespace = Number.isFinite(raw) ? Math.max(0, Math.min(60, raw)) : 0;
+  const align = userSettings.value.columnAlign;
+  return {
+    width: `${100 - whitespace}%`,
+    gridTemplateColumns: `repeat(${Math.max(1, displayedColumns.value.length)}, minmax(0, 1fr))`,
+    gap: `min(${userSettings.value.columnGap}px, 2%)`,
+    marginLeft: align === 'left' ? '0' : 'auto',
+    marginRight: align === 'right' ? '0' : 'auto',
+  };
 });
 
 function handleGlobalKeyDown(e: KeyboardEvent) {
@@ -518,11 +462,14 @@ onMounted(async () => {
   await loadBookmarks();
   await loadColumnLayout(rawBookmarkTree.value);
   setupBookmarkListeners();
+  stopCloudBackupController = startCloudBackupController();
 
   window.addEventListener('keydown', handleGlobalKeyDown);
 });
 
 onUnmounted(() => {
+  stopCloudBackupController?.();
+  clearColumnNotice();
   if (clockTimer) clearInterval(clockTimer);
   window.removeEventListener('keydown', handleGlobalKeyDown);
   setBatchSelectHandler(null);
@@ -816,6 +763,13 @@ onUnmounted(() => {
       </div>
     </section>
 
+    <p v-if="columnNotice" role="status" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 max-w-[calc(100vw-2rem)] rounded-xl border border-amber-200 bg-amber-50/95 px-4 py-3 text-sm text-amber-800 shadow-lg pointer-events-none dark:border-amber-800 dark:bg-zinc-900/95 dark:text-amber-300">{{ columnNotice }}</p>
+
+    <button v-if="currentGoogleUser && cloudDecisionRequired && !isSettingsOpen" type="button" @click="openAccountSettings"
+      class="fixed bottom-6 right-6 z-40 max-w-xs rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs text-amber-800 shadow-lg dark:bg-zinc-900 dark:text-amber-300">
+      {{ t('auth.reviewCloudChoice') }}
+    </button>
+
     <!-- Main Bookmark Columns Area -->
     <main
       class="flex-1 overflow-x-auto min-h-0 @container"
@@ -826,13 +780,8 @@ onUnmounted(() => {
     >
       <div
         v-if="isLoaded"
-        class="min-w-full w-max flex items-start transition-all relative"
-        :class="{
-          'justify-start': userSettings.columnAlign === 'left',
-          'justify-center': userSettings.columnAlign === 'center',
-          'justify-end': userSettings.columnAlign === 'right',
-        }"
-        :style="{ gap: `${userSettings.columnGap}px` }"
+        class="grid items-start relative"
+        :style="columnsGridStyle"
         @dragover="handleMainDragOver"
         @dragleave="handleMainDragLeave"
         @drop="handleMainDrop"

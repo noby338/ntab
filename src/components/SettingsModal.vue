@@ -77,16 +77,27 @@ import { t, LANGUAGE_OPTIONS, activeLanguage } from '../locales';
 import {
   currentGoogleUser,
   isSyncing,
-  lastSyncedTime,
   syncStatusMessage,
   loginWithGoogle,
   logoutGoogle,
   backupToGoogleCloud,
   restoreFromGoogleCloud,
   isRealExtension,
+  automaticBackupEnabled,
+  setAutomaticBackup,
+  cloudDecisionRequired,
+  cloudCheckComplete,
+  remoteBackup,
+  checkCloudBackup,
+  hasUnbackedChanges,
+  lastBackupTime,
+  lastRestoreTime,
+  canUndoCloudRestore,
+  undoCloudRestore,
 } from '../services/googleAuthService';
 import AdvancedConfigModal from './AdvancedConfigModal.vue';
 import type { ThemeMode } from '../types';
+import packageMetadata from '../../package.json';
 
 const props = defineProps<{
   isOpen: boolean;
@@ -99,11 +110,30 @@ const emit = defineEmits<{
 
 const activeTab = ref<'appearance' | 'layout' | 'shortcuts' | 'health' | 'donate' | 'backup'>('appearance');
 
+const pendingCloudConfirmation = ref<{ kind: 'restore' | 'backup'; revision: string | null; account: string } | null>(null);
+watch(() => currentGoogleUser.value?.email, () => { pendingCloudConfirmation.value = null; });
+watch(() => props.isOpen, (open) => { if (!open) pendingCloudConfirmation.value = null; });
+
+async function prepareCloudAction(kind: 'restore' | 'backup') {
+  pendingCloudConfirmation.value = null;
+  const result = await checkCloudBackup();
+  if (!result.success || !currentGoogleUser.value) return;
+  if (kind === 'restore' && !remoteBackup.value) return;
+  pendingCloudConfirmation.value = { kind, revision: remoteBackup.value?.revision || null, account: currentGoogleUser.value.email };
+}
+async function confirmCloudAction() {
+  const action = pendingCloudConfirmation.value;
+  pendingCloudConfirmation.value = null;
+  if (!action || action.account !== currentGoogleUser.value?.email) return;
+  if (action.kind === 'restore' && action.revision) await restoreFromGoogleCloud(action.revision);
+  else if (action.kind === 'backup') await backupToGoogleCloud({ confirmedRevision: action.revision });
+}
+
 const extensionVersion = computed(() => {
   if (typeof chrome !== 'undefined' && chrome.runtime?.getManifest) {
-    return chrome.runtime.getManifest().version || '1.0.3';
+    return chrome.runtime.getManifest().version || packageMetadata.version;
   }
-  return '1.0.3';
+  return packageMetadata.version;
 });
 
 const healthTab = ref<'dead_404' | 'blocked_403'>('dead_404');
@@ -364,6 +394,10 @@ const importJson = ref('');
 const importSuccess = ref(false);
 const isCopied = ref(false);
 const isAdvancedModalOpen = ref(false);
+
+watch(() => [userSettings.value, columnLayout.value], () => {
+  if (props.isOpen && activeTab.value === 'backup') handleExport();
+}, { deep: true, flush: 'post' });
 
 function handleExport() {
   const data = buildAdaptiveExportData();
@@ -981,50 +1015,19 @@ function handleImport() {
             <div class="pt-4 border-t border-slate-100 dark:border-zinc-800 space-y-3">
               <div class="flex items-center justify-between">
                 <div>
-                  <span class="font-medium text-slate-700 dark:text-zinc-300">{{ t('settings.columnWidth') }}</span>
-                  <div class="text-[11px] text-slate-400">{{ t('settings.columnWidthDesc') }}</div>
+                  <span class="font-medium text-slate-700 dark:text-zinc-300">{{ t('settings.horizontalWhitespace') }}</span>
+                  <div class="text-[11px] text-slate-400">{{ t('settings.horizontalWhitespaceDesc') }}</div>
                 </div>
-                <span class="text-xs text-indigo-600 dark:text-indigo-400 font-mono font-bold">{{ userSettings.columnWidth }}%</span>
+                <span class="text-xs text-indigo-600 dark:text-indigo-400 font-mono font-bold">{{ userSettings.horizontalWhitespace ?? 0 }}%</span>
               </div>
-
-              <!-- Quick Presets: Ordered from small percentage (more columns) to large percentage (fewer columns) -->
-              <div class="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-9 gap-1.5 text-xs">
-                <button
-                  v-for="preset in [
-                    { label: '10%', cols: 10, val: 10 },
-                    { label: '12.5%', cols: 8, val: 12.5 },
-                    { label: '14%', cols: 7, val: 14 },
-                    { label: '16.6%', cols: 6, val: 16.6 },
-                    { label: '20%', cols: 5, val: 20 },
-                    { label: '25%', cols: 4, val: 25 },
-                    { label: '33.3%', cols: 3, val: 33.3 },
-                    { label: '50%', cols: 2, val: 50 },
-                    { label: '100%', cols: 1, val: 100 },
-                  ]"
-                  :key="preset.val"
-                  type="button"
-                  @click="saveSettings({ columnWidth: preset.val })"
-                  class="py-1 px-1 rounded-xl border text-center transition-colors cursor-pointer flex flex-col items-center justify-center"
-                  :class="Math.abs(userSettings.columnWidth - preset.val) < 0.8
-                    ? 'bg-indigo-500/10 border-indigo-500 text-indigo-600 dark:text-indigo-400 font-semibold shadow-2xs'
-                    : 'border-slate-200/80 dark:border-white/10 text-slate-600 dark:text-zinc-400 hover:bg-black/5 dark:hover:bg-white/5'"
-                >
-                  <span class="font-mono text-xs">{{ preset.label }}</span>
-                  <span class="text-[9px] opacity-70 leading-none mt-0.5 whitespace-nowrap">
-                    {{ preset.cols === 1 ? t('settings.columnCountSingle') : t('settings.columnCount', { count: preset.cols }) }}
-                  </span>
-                </button>
-              </div>
-
               <input
-                type="range"
-                min="8"
-                max="100"
-                step="0.5"
-                :value="userSettings.columnWidth"
-                @input="saveSettings({ columnWidth: Number(($event.target as HTMLInputElement).value) })"
+                type="range" min="0" max="60" step="2"
+                :aria-label="t('settings.horizontalWhitespace')"
+                :value="userSettings.horizontalWhitespace ?? 0"
+                @input="saveSettings({ horizontalWhitespace: Number(($event.target as HTMLInputElement).value) })"
                 class="w-full accent-indigo-600 cursor-pointer"
               />
+              <p class="text-[11px] text-slate-400">{{ t('settings.automaticColumnsDesc') }}</p>
             </div>
 
             <div class="pt-4 border-t border-slate-100 dark:border-zinc-800 space-y-3">
@@ -1690,7 +1693,7 @@ function handleImport() {
                       </span>
                     </div>
                     <div class="text-[11px] text-slate-400 truncate">
-                      {{ t('auth.googleSyncDesc') || '自动在云端备份排版布局与个性化设置，换机登录一键快速恢复' }}
+                      {{ t('auth.googleSyncDesc') || '可选自动备份配置，确认后还原；不备份完整书签' }}
                     </div>
                   </div>
                 </div>
@@ -1725,14 +1728,48 @@ function handleImport() {
                   </div>
 
                   <div class="text-right text-[10px] text-slate-400 font-mono">
-                    <div v-if="lastSyncedTime">{{ t('auth.lastSynced') || '上次同步' }}: {{ lastSyncedTime }}</div>
+                    <div v-if="lastBackupTime">{{ t('auth.lastBackup') }}: {{ lastBackupTime }}</div>
+                    <div v-if="lastRestoreTime">{{ t('auth.lastRestore') }}: {{ lastRestoreTime }}</div>
                   </div>
+                </div>
+
+                <label class="flex items-start gap-2 text-xs text-slate-700 dark:text-zinc-300">
+                  <input type="checkbox" :checked="automaticBackupEnabled" :disabled="isSyncing"
+                    @change="setAutomaticBackup(($event.target as HTMLInputElement).checked)"
+                    class="mt-0.5 accent-indigo-600" />
+                  <span><span class="font-semibold">{{ t('auth.automaticBackup') }}</span><br />
+                    <span class="text-[11px] text-slate-500 dark:text-zinc-400">{{ t('auth.automaticBackupDesc') }}</span>
+                  </span>
+                </label>
+                <p class="text-xs text-slate-500 dark:text-zinc-400">
+                  {{ t(isSyncing ? 'auth.syncing' : cloudDecisionRequired ? 'auth.cloudChoiceRequired' : hasUnbackedChanges ? 'auth.pendingChanges' : 'auth.synced') }}
+                </p>
+                <div v-if="remoteBackup?.modifiedTime" class="text-[11px] text-slate-500 dark:text-zinc-400">
+                  {{ t('auth.cloudBackupTime') }}: {{ new Date(remoteBackup.modifiedTime).toLocaleString() }}
+                </div>
+                <div v-if="cloudDecisionRequired && cloudCheckComplete" class="rounded-xl border border-amber-300/60 bg-amber-50/70 dark:bg-amber-900/10 p-3 space-y-2">
+                  <p class="text-xs text-amber-800 dark:text-amber-300">{{ t(remoteBackup ? 'auth.cloudChoiceRequired' : 'auth.cloudMissingChoice') }}</p>
+                  <div class="flex flex-wrap gap-2">
+                    <button v-if="remoteBackup" type="button" :disabled="isSyncing" @click="prepareCloudAction('restore')" class="text-xs px-3 py-2 rounded-lg bg-indigo-600 text-white disabled:opacity-50">{{ t('auth.useCloudConfig') }}</button>
+                    <button type="button" :disabled="isSyncing" @click="prepareCloudAction('backup')" class="text-xs px-3 py-2 rounded-lg border border-amber-300 dark:text-amber-200 disabled:opacity-50">{{ t('auth.keepLocalConfig') }}</button>
+                  </div>
+                </div>
+                <div v-if="pendingCloudConfirmation" role="alertdialog" :aria-label="t('auth.confirmCloudAction')" class="rounded-xl border border-indigo-300 dark:border-indigo-700 p-3 space-y-2">
+                  <p class="text-xs text-slate-700 dark:text-zinc-300">{{ t(pendingCloudConfirmation.kind === 'restore' ? 'auth.confirmRestore' : 'auth.confirmKeepLocal') }}</p>
+                  <div class="flex gap-2">
+                    <button type="button" :disabled="isSyncing" @click="confirmCloudAction" class="text-xs px-3 py-2 rounded-lg bg-indigo-600 text-white disabled:opacity-50">{{ t('common.confirm') }}</button>
+                    <button type="button" @click="pendingCloudConfirmation = null" class="text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-zinc-600 dark:text-zinc-300">{{ t('common.cancel') }}</button>
+                  </div>
+                </div>
+                <div class="flex flex-wrap gap-3 text-xs">
+                  <button type="button" :disabled="isSyncing" @click="checkCloudBackup()" class="text-indigo-600 dark:text-indigo-400 disabled:opacity-50">{{ t('auth.checkCloud') }}</button>
+                  <button v-if="canUndoCloudRestore" type="button" :disabled="isSyncing" @click="undoCloudRestore()" class="text-indigo-600 dark:text-indigo-400 disabled:opacity-50">{{ t('auth.undoRestore') }}</button>
                 </div>
 
                 <div class="flex items-center gap-2 pt-1">
                   <button
                     type="button"
-                    @click="backupToGoogleCloud"
+                    @click="backupToGoogleCloud()"
                     :disabled="isSyncing"
                     class="flex-1 py-1.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-medium text-xs shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                   >
@@ -1742,7 +1779,7 @@ function handleImport() {
 
                   <button
                     type="button"
-                    @click="restoreFromGoogleCloud"
+                    @click="prepareCloudAction('restore')"
                     :disabled="isSyncing"
                     class="flex-1 py-1.5 px-3 rounded-xl border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800 disabled:opacity-50 text-slate-700 dark:text-zinc-300 font-medium text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                   >

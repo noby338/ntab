@@ -91,7 +91,8 @@ export interface UserSettings {
   rowHeight: number;
   hoverDuration: number;
   columnGap: number;
-  columnWidth: number;
+  columnWidth?: number; // Legacy imports only; columns now size automatically.
+  horizontalWhitespace: number; // Total unused horizontal percentage.
   columnAlign: 'left' | 'center' | 'right';
   cardRadius?: number;
   backdropBlur?: number;
